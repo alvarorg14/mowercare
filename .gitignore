@@ -1,0 +1,29 @@
+# Environment (keep names-only examples tracked)
+.env
+.env.*
+!.env.example
+
+# Java / Maven
+**/target/
+*.class
+*.jar
+*.war
+*.hprof
+hs_err_pid*
+
+# Node / Expo / RN
+**/node_modules/
+.expo/
+dist/
+web-build/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

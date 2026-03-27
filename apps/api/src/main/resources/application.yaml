@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: api
+
+  # PostgreSQL (override via environment or .env — see repo root .env.example)
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/mowercare}
+    username: ${SPRING_DATASOURCE_USERNAME:mowercare}
+    password: ${SPRING_DATASOURCE_PASSWORD:mowercare}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml

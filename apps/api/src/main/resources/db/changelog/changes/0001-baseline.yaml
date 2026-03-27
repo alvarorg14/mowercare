@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: "0001-baseline"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: SELECT 1
+            stripComments: false
