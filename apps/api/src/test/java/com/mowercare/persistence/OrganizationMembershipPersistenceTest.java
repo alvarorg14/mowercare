@@ -10,10 +10,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mowercare.model.Organization;
 import com.mowercare.model.User;
+import com.mowercare.model.UserRole;
 import com.mowercare.repository.OrganizationRepository;
 import com.mowercare.repository.UserRepository;
 import com.mowercare.testsupport.AbstractPostgresIntegrationTest;
@@ -30,18 +32,25 @@ class OrganizationMembershipPersistenceTest extends AbstractPostgresIntegrationT
 	private UserRepository userRepository;
 
 	@Autowired
+	private PasswordEncoder passwordEncoder;
+
+	@Autowired
 	private EntityManager entityManager;
+
+	private User user(Organization org, String email, UserRole role) {
+		return new User(org, email, passwordEncoder.encode("testpass12"), role);
+	}
 
 	@Test
 	@DisplayName("Given a persisted organization and user, when the session is cleared and the user is reloaded, then organization id matches")
 	void givenOrganizationAndUser_whenPersistedAndReloadedAfterClear_thenOrganizationIdMatches() {
 		Organization org = organizationRepository.save(new Organization("Acme Mowers"));
-		User user = userRepository.save(new User(org));
+		User u = userRepository.save(user(org, "member@acme.test", UserRole.TECHNICIAN));
 
 		userRepository.flush();
 		entityManager.clear();
 
-		User loaded = userRepository.findById(user.getId()).orElseThrow();
+		User loaded = userRepository.findById(u.getId()).orElseThrow();
 		assertThat(loaded.getOrganizationId()).isEqualTo(org.getId());
 		assertThat(loaded.getOrganizationId()).isNotNull();
 	}
@@ -53,7 +62,7 @@ class OrganizationMembershipPersistenceTest extends AbstractPostgresIntegrationT
 		Organization ref = organizationRepository.getReferenceById(missingOrgId);
 
 		assertThatThrownBy(() -> {
-			userRepository.save(new User(ref));
+			userRepository.save(user(ref, "orphan@test.local", UserRole.TECHNICIAN));
 			userRepository.flush();
 		}).isInstanceOf(DataIntegrityViolationException.class);
 	}
@@ -62,8 +71,8 @@ class OrganizationMembershipPersistenceTest extends AbstractPostgresIntegrationT
 	@DisplayName("Given a shared organization, when two users are persisted, then user count is two")
 	void givenSharedOrganization_whenTwoUsersPersisted_thenUserCountIsTwo() {
 		Organization org = organizationRepository.save(new Organization("Shared Org"));
-		userRepository.save(new User(org));
-		userRepository.save(new User(org));
+		userRepository.save(user(org, "first@shared.test", UserRole.TECHNICIAN));
+		userRepository.save(user(org, "second@shared.test", UserRole.TECHNICIAN));
 		userRepository.flush();
 		assertThat(userRepository.count()).isEqualTo(2);
 	}
@@ -100,8 +109,8 @@ class OrganizationMembershipPersistenceTest extends AbstractPostgresIntegrationT
 	void givenTwoOrganizations_whenOneUserEach_thenReloadedUsersReferenceCorrectOrg() {
 		Organization orgA = organizationRepository.save(new Organization("Tenant A"));
 		Organization orgB = organizationRepository.save(new Organization("Tenant B"));
-		User userA = userRepository.save(new User(orgA));
-		User userB = userRepository.save(new User(orgB));
+		User userA = userRepository.save(user(orgA, "person@tenant-a.test", UserRole.TECHNICIAN));
+		User userB = userRepository.save(user(orgB, "person@tenant-b.test", UserRole.TECHNICIAN));
 		userRepository.flush();
 		entityManager.clear();
 

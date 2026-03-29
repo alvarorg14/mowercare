@@ -15,3 +15,7 @@ spring:
 
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+
+mowercare:
+  bootstrap:
+    token: ${MOWERCARE_BOOTSTRAP_TOKEN:}

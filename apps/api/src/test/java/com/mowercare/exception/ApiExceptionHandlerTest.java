@@ -1,0 +1,106 @@
+package com.mowercare.exception;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.net.URI;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
+class ApiExceptionHandlerTest {
+
+	private static final URI EXPECTED_TYPE_UNAUTHORIZED = URI.create("urn:mowercare:problem:BOOTSTRAP_UNAUTHORIZED");
+	private static final URI EXPECTED_TYPE_CONFLICT = URI.create("urn:mowercare:problem:BOOTSTRAP_ALREADY_COMPLETED");
+	private static final URI EXPECTED_TYPE_VALIDATION = URI.create("urn:mowercare:problem:VALIDATION_ERROR");
+
+	private ApiExceptionHandler handler;
+
+	@BeforeEach
+	void setUp() {
+		handler = new ApiExceptionHandler();
+	}
+
+	@Test
+	@DisplayName("given InvalidBootstrapTokenException when handle then returns 401 problem json with BOOTSTRAP_UNAUTHORIZED")
+	void givenInvalidBootstrapToken_whenHandle_thenUnauthorizedProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/bootstrap/organization");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.invalidBootstrapToken(new InvalidBootstrapTokenException(), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+		assertThat(response.getHeaders().getContentType()).hasToString(MediaType.parseMediaType("application/problem+json").toString());
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("BOOTSTRAP_UNAUTHORIZED");
+		assertThat(response.getBody().getStatus()).isEqualTo(401);
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_UNAUTHORIZED);
+		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/bootstrap/organization"));
+	}
+
+	@Test
+	@DisplayName("given BootstrapAlreadyCompletedException when handle then returns 409 problem json with BOOTSTRAP_ALREADY_COMPLETED")
+	void givenBootstrapAlreadyCompleted_whenHandle_thenConflictProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/bootstrap/organization");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.bootstrapAlreadyCompleted(new BootstrapAlreadyCompletedException(), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("BOOTSTRAP_ALREADY_COMPLETED");
+		assertThat(response.getBody().getStatus()).isEqualTo(409);
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_CONFLICT);
+		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/bootstrap/organization"));
+	}
+
+	@Test
+	@DisplayName("given MethodArgumentNotValidException when handle then returns 400 problem json with VALIDATION_ERROR")
+	void givenValidationErrors_whenHandle_thenBadRequestProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/bootstrap/organization");
+
+		Object target = new Object();
+		BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "target");
+		bindingResult.addError(new FieldError("target", "adminEmail", "must be a well-formed email address"));
+		MethodArgumentNotValidException ex =
+				new MethodArgumentNotValidException(null, bindingResult);
+
+		ResponseEntity<ProblemDetail> response = handler.validation(ex, request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("VALIDATION_ERROR");
+		assertThat(response.getBody().getDetail()).contains("adminEmail");
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_VALIDATION);
+		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/bootstrap/organization"));
+	}
+
+	@Test
+	@DisplayName("given multiple field errors when handle validation then detail lists all violations")
+	void givenMultipleFieldErrors_whenValidation_thenDetailContainsAll() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/bootstrap/organization");
+
+		Object target = new Object();
+		BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "target");
+		bindingResult.addError(new FieldError("target", "adminEmail", "must be a well-formed email address"));
+		bindingResult.addError(new FieldError("target", "adminPassword", "size must be between 8 and 128"));
+		MethodArgumentNotValidException ex =
+				new MethodArgumentNotValidException(null, bindingResult);
+
+		ResponseEntity<ProblemDetail> response = handler.validation(ex, request);
+
+		assertThat(response.getBody().getDetail())
+				.contains("adminEmail")
+				.contains("adminPassword")
+				.contains("size must be between 8 and 128");
+	}
+}

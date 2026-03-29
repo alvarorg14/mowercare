@@ -8,6 +8,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,12 +17,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "users")
+@Table(
+		name = "users",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uq_users_organization_id_email",
+				columnNames = { "organization_id", "email" }))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
@@ -33,6 +40,16 @@ public class User {
 	@JoinColumn(name = "organization_id", nullable = false)
 	private Organization organization;
 
+	@Column(nullable = false, length = 255)
+	private String email;
+
+	@Column(name = "password_hash", nullable = false, length = 255)
+	private String passwordHash;
+
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 32)
+	private UserRole role;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
@@ -41,8 +58,11 @@ public class User {
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
-	public User(Organization organization) {
+	public User(Organization organization, String email, String passwordHash, UserRole role) {
 		this.organization = organization;
+		this.email = email;
+		this.passwordHash = passwordHash;
+		this.role = role;
 	}
 
 	/**
