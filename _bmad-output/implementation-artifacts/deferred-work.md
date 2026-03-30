@@ -44,3 +44,7 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 2-4-deactivate-employee-and-block-access.md (2026-03-30)
 
 - **Per-request DB lookup for deactivated account status:** Story accepts MVP tradeoff; consider caching or session claims if profiling shows hot-path cost.
+
+## Deferred from: code review of 2-5-admin-settings-ui-invites-roles-deactivate.md (2026-03-30)
+
+- **No automated mobile tests for Settings/Team routes:** Story allows a manual checklist; add Maestro/E2E or integration tests when the repo adopts a runner pattern for RN.

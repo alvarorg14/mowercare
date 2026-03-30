@@ -17,6 +17,21 @@ export function getOrganizationIdFromAccessToken(accessToken: string): string | 
 }
 
 /**
+ * Read JWT `sub` claim — user id (UUID string). No signature verification — server is source of truth.
+ */
+export function getSubjectFromAccessToken(accessToken: string): string | null {
+  try {
+    const parts = accessToken.split('.');
+    if (parts.length < 2) return null;
+    const payload = base64UrlToUtf8(parts[1]);
+    const data = JSON.parse(payload) as { sub?: string };
+    return typeof data.sub === 'string' ? data.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Read role claim from access JWT (no signature verification — server is source of truth).
  */
 export function getRoleFromAccessToken(accessToken: string): JwtRole | null {

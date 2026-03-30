@@ -38,4 +38,4 @@ If path `organizationId` ≠ JWT `organizationId`, the API returns **`403`** `TE
 
 ## Mobile
 
-The app reads the JWT **`role`** claim (and caches it with session refresh) to gate UI such as org profile edit vs read-only. **No secrets** in the client; use the same Problem Details **`code`** values for messaging. See [`_bmad-output/planning-artifacts/architecture.md`](../_bmad-output/planning-artifacts/architecture.md).
+The app reads the JWT **`role`** claim (and caches it with session refresh) to gate UI such as org profile edit vs read-only. **Settings** (`/settings`) links to **Organization** and **Team**; **Team** lists, invites, changes roles, and deactivates users only when `role === ADMIN` — technicians see an explanation instead of admin actions. **No secrets** in the client; use the same Problem Details **`code`** values for messaging. See [`_bmad-output/planning-artifacts/architecture.md`](../_bmad-output/planning-artifacts/architecture.md).

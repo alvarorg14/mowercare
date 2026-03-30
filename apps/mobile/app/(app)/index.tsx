@@ -36,8 +36,8 @@ export default function AppHomeScreen() {
         <Text variant="bodySmall" style={styles.muted}>
           API base (config): {apiBase}
         </Text>
-        <Button mode="outlined" onPress={() => router.push('/organization')}>
-          Organization
+        <Button mode="contained" onPress={() => router.push('/settings')}>
+          Settings
         </Button>
         <Button mode="outlined" onPress={() => signOut()}>
           Sign out
