@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: "0007-deactivated-by-fk-on-delete-set-null"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: users
+            constraintName: fk_users_deactivated_by_user_id
+        - addForeignKeyConstraint:
+            baseTableName: users
+            baseColumnNames: deactivated_by_user_id
+            constraintName: fk_users_deactivated_by_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableName: users
+            constraintName: fk_users_deactivated_by_user_id
+        - addForeignKeyConstraint:
+            baseTableName: users
+            baseColumnNames: deactivated_by_user_id
+            constraintName: fk_users_deactivated_by_user_id
+            referencedTableName: users
+            referencedColumnNames: id

@@ -415,6 +415,193 @@ class OrganizationUsersIT extends AbstractPostgresIntegrationTest {
 				.andExpect(jsonPath("$[0].accountStatus").value("ACTIVE"));
 	}
 
+	@Test
+	@DisplayName("given admin when POST deactivate tech then 200 refresh revoked and access blocked")
+	void givenAdmin_whenDeactivate_thenBlocksAuth() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(
+								"{\"email\":\"deactech@acme.test\",\"role\":\"TECHNICIAN\",\"initialPassword\":\"secret12345\"}"))
+				.andExpect(status().isCreated());
+
+		MvcResult loginTech = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(String.format(
+								"{\"organizationId\":\"%s\",\"email\":\"deactech@acme.test\",\"password\":\"secret12345\"}",
+								orgId)))
+				.andExpect(status().isOk())
+				.andReturn();
+		JsonNode techLogin = objectMapper.readTree(loginTech.getResponse().getContentAsString());
+		String techAccess = techLogin.get("accessToken").asText();
+		String techRefresh = techLogin.get("refreshToken").asText();
+
+		String techUserId = null;
+		for (JsonNode n : objectMapper.readTree(
+				mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+								.header("Authorization", "Bearer " + adminAccess))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getResponse()
+						.getContentAsString())) {
+			if ("deactech@acme.test".equals(n.get("email").asText())) {
+				techUserId = n.get("id").asText();
+				break;
+			}
+		}
+		assertThat(techUserId).isNotNull();
+		assertThat(refreshTokenRepository.count()).isGreaterThan(0);
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, techUserId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accountStatus").value("DEACTIVATED"));
+
+		UUID techUuid = UUID.fromString(techUserId);
+		assertThat(refreshTokenRepository.findAll().stream().noneMatch(r -> r.getUser().getId().equals(techUuid)))
+				.isTrue();
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + techAccess))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("ACCOUNT_DEACTIVATED"));
+
+		mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"refreshToken\":\"" + techRefresh + "\"}"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_REFRESH_INVALID"));
+
+		mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(String.format(
+								"{\"organizationId\":\"%s\",\"email\":\"deactech@acme.test\",\"password\":\"secret12345\"}",
+								orgId)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, techUserId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accountStatus").value("DEACTIVATED"));
+	}
+
+	@Test
+	@DisplayName("given only admin when POST deactivate self then 409 LAST_ADMIN_DEACTIVATION")
+	void givenOnlyAdmin_whenDeactivateSelf_thenConflict() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String adminUserId = objectMapper
+				.readTree(
+						mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+										.header("Authorization", "Bearer " + adminAccess))
+								.andExpect(status().isOk())
+								.andReturn()
+								.getResponse()
+								.getContentAsString())
+				.get(0)
+				.get("id")
+				.asText();
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, adminUserId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("LAST_ADMIN_DEACTIVATION"))
+				.andExpect(jsonPath("$.detail")
+						.value("The organization must retain at least one user with the Admin role."));
+	}
+
+	@Test
+	@DisplayName("given two active admins when POST deactivate one then 200")
+	void givenTwoAdmins_whenDeactivateOne_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(
+								"{\"email\":\"admin2deac@acme.test\",\"role\":\"ADMIN\",\"initialPassword\":\"secret12345\"}"))
+				.andExpect(status().isCreated());
+
+		String bootstrapAdminId = null;
+		for (JsonNode n : objectMapper.readTree(
+				mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+								.header("Authorization", "Bearer " + adminAccess))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getResponse()
+						.getContentAsString())) {
+			if ("admin@acme.test".equals(n.get("email").asText())) {
+				bootstrapAdminId = n.get("id").asText();
+				break;
+			}
+		}
+		assertThat(bootstrapAdminId).isNotNull();
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, bootstrapAdminId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accountStatus").value("DEACTIVATED"));
+	}
+
+	@Test
+	@DisplayName("given technician when POST deactivate then 403 FORBIDDEN_ROLE")
+	void givenTechnician_whenDeactivate_thenForbidden() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		seedTechnician(orgId);
+		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+		String randomId = "00000000-0000-0000-0000-000000000099";
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, randomId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN_ROLE"));
+	}
+
+	@Test
+	@DisplayName("given deactivated user when PATCH role then 409 USER_DEACTIVATED")
+	void givenDeactivatedUser_whenPatchRole_thenConflict() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(
+								"{\"email\":\"patchdeac@acme.test\",\"role\":\"TECHNICIAN\",\"initialPassword\":\"secret12345\"}"))
+				.andExpect(status().isCreated());
+
+		String techId = null;
+		for (JsonNode n : objectMapper.readTree(
+				mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+								.header("Authorization", "Bearer " + adminAccess))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getResponse()
+						.getContentAsString())) {
+			if ("patchdeac@acme.test".equals(n.get("email").asText())) {
+				techId = n.get("id").asText();
+				break;
+			}
+		}
+		assertThat(techId).isNotNull();
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, techId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, techId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"ADMIN\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("USER_DEACTIVATED"));
+	}
+
 	private void seedTechnician(String organizationId) {
 		UUID orgUuid = UUID.fromString(organizationId);
 		Organization org = organizationRepository.findById(orgUuid).orElseThrow();

@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.mowercare.config.JwtProperties;
 import com.mowercare.exception.InvalidCredentialsException;
+import com.mowercare.exception.InvalidRefreshTokenException;
 import com.mowercare.model.AccountStatus;
 import com.mowercare.model.RefreshToken;
 import com.mowercare.model.User;
@@ -129,6 +130,18 @@ class AuthServiceTest {
 	}
 
 	@Test
+	@DisplayName("given deactivated account when login then throws InvalidCredentialsException")
+	void givenDeactivated_whenLogin_thenThrows() {
+		when(userRepository.findByOrganization_IdAndEmail(orgId, "admin@test.local")).thenReturn(Optional.of(user));
+		when(user.getAccountStatus()).thenReturn(AccountStatus.DEACTIVATED);
+
+		assertThatThrownBy(() -> authService.login(orgId, "admin@test.local", "secret12345"))
+				.isInstanceOf(InvalidCredentialsException.class);
+		verify(passwordEncoder, never()).matches(any(), any());
+		verify(refreshTokenRepository, never()).save(any());
+	}
+
+	@Test
 	@DisplayName("given wrong password when login then throws InvalidCredentialsException")
 	void givenWrongPassword_whenLogin_thenThrows() {
 		when(userRepository.findByOrganization_IdAndEmail(orgId, "admin@test.local")).thenReturn(Optional.of(user));
@@ -158,5 +171,17 @@ class AuthServiceTest {
 		verify(refreshTokenRepository, Mockito.times(2)).save(captor.capture());
 		assertThat(captor.getAllValues()).hasSize(2);
 		assertThat(row.getRevokedAt()).isNotNull();
+	}
+
+	@Test
+	@DisplayName("given refresh row for deactivated user when refresh then throws InvalidRefreshTokenException")
+	void givenDeactivatedUser_whenRefresh_thenThrows() {
+		RefreshToken row = new RefreshToken(UUID.randomUUID(), user, "stored-hash", Instant.parse("2026-04-30T12:00:00Z"));
+		when(opaqueTokenService.hashRawToken("incoming")).thenReturn("stored-hash");
+		when(refreshTokenRepository.findByTokenHash("stored-hash")).thenReturn(Optional.of(row));
+		when(user.getAccountStatus()).thenReturn(AccountStatus.DEACTIVATED);
+
+		assertThatThrownBy(() -> authService.refresh("incoming")).isInstanceOf(InvalidRefreshTokenException.class);
+		verify(refreshTokenRepository, never()).save(any());
 	}
 }

@@ -114,4 +114,25 @@ public class OrganizationUsersController {
 			@Valid @RequestBody UpdateEmployeeUserRoleRequest body) {
 		return organizationUserService.updateUserRole(organizationId, userId, jwt, body);
 	}
+
+	@PostMapping("/{organizationId}/users/{userId}/deactivate")
+	@ResponseStatus(HttpStatus.OK)
+	@Operation(
+			summary = "Deactivate an employee user",
+			description =
+					"Admin only. Marks the account deactivated, revokes refresh tokens, and blocks further API access (including valid access JWTs until expiry). Idempotent for already-deactivated users.")
+	@ApiResponse(
+			responseCode = "200",
+			description = "User deactivated (or already deactivated)",
+			content = @Content(schema = @Schema(implementation = EmployeeUserResponse.class)))
+	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
+	@ApiResponse(responseCode = "404", description = "User not found in this organization")
+	@ApiResponse(responseCode = "409", description = "Cannot deactivate the last active Admin (RFC 7807)")
+	@ApiResponse(responseCode = "403", description = "Tenant mismatch or not Admin (RFC 7807)")
+	public EmployeeUserResponse deactivateUser(
+			@PathVariable UUID organizationId,
+			@PathVariable UUID userId,
+			@AuthenticationPrincipal Jwt jwt) {
+		return organizationUserService.deactivateUser(organizationId, userId, jwt);
+	}
 }

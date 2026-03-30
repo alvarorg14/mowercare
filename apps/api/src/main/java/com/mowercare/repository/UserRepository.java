@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.mowercare.model.AccountStatus;
 import com.mowercare.model.User;
 import com.mowercare.model.UserRole;
 
@@ -25,6 +26,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	Optional<User> findByInviteTokenHash(String inviteTokenHash);
 
 	long countByOrganization_IdAndRole(UUID organizationId, UserRole role);
+
+	long countByOrganization_IdAndRoleAndAccountStatus(
+			UUID organizationId, UserRole role, AccountStatus accountStatus);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT u FROM User u WHERE u.organization.id = :orgId AND u.role = :role")

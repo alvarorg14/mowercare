@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: "0006-user-deactivation-audit"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: deactivated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: true
+              - column:
+                  name: deactivated_by_user_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableName: users
+            baseColumnNames: deactivated_by_user_id
+            constraintName: fk_users_deactivated_by_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableName: users
+            constraintName: fk_users_deactivated_by_user_id
+        - dropColumn:
+            tableName: users
+            columnName: deactivated_at
+        - dropColumn:
+            tableName: users
+            columnName: deactivated_by_user_id

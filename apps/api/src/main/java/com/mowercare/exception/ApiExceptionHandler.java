@@ -165,6 +165,24 @@ public class ApiExceptionHandler {
 				.body(pd);
 	}
 
+	@ExceptionHandler(LastAdminDeactivationException.class)
+	public ResponseEntity<ProblemDetail> lastAdminDeactivation(
+			LastAdminDeactivationException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ApiProblemBodies.lastAdminDeactivation(request);
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(UserDeactivatedManagementException.class)
+	public ResponseEntity<ProblemDetail> userDeactivatedManagement(
+			UserDeactivatedManagementException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ApiProblemBodies.userDeactivatedManagement(request);
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public ResponseEntity<ProblemDetail> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
 		if (DataIntegrityViolations.isDuplicateOrgEmail(ex)) {

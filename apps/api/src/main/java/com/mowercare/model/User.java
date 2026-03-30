@@ -68,6 +68,12 @@ public class User {
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
+	@Column(name = "deactivated_at")
+	private Instant deactivatedAt;
+
+	@Column(name = "deactivated_by_user_id")
+	private UUID deactivatedByUserId;
+
 	public User(Organization organization, String email, String passwordHash, UserRole role) {
 		this(organization, email, passwordHash, role, AccountStatus.ACTIVE, null, null);
 	}
@@ -105,6 +111,18 @@ public class User {
 	/** Org admin role change — business rules (e.g. last admin) enforced in the service. */
 	public void updateRole(UserRole newRole) {
 		this.role = newRole;
+	}
+
+	/**
+	 * Marks the account deactivated (idempotent — no-op if already {@link AccountStatus#DEACTIVATED}).
+	 */
+	public void deactivate(UUID actorUserId, Instant at) {
+		if (accountStatus == AccountStatus.DEACTIVATED) {
+			return;
+		}
+		this.accountStatus = AccountStatus.DEACTIVATED;
+		this.deactivatedAt = at;
+		this.deactivatedByUserId = actorUserId;
 	}
 
 	/**

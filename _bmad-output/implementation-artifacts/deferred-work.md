@@ -40,3 +40,7 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 2-3-assign-roles-to-employees.md (2026-03-30)
 
 - **`lockByOrganizationIdAndRole` pessimistic lock scope:** Loads all users with `ADMIN` role in the org for locking; fine for typical org sizes; revisit if very large admin sets or lock contention become an issue.
+
+## Deferred from: code review of 2-4-deactivate-employee-and-block-access.md (2026-03-30)
+
+- **Per-request DB lookup for deactivated account status:** Story accepts MVP tradeoff; consider caching or session claims if profiling shows hot-path cost.

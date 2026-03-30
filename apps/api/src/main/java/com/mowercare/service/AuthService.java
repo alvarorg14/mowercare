@@ -61,7 +61,8 @@ public class AuthService {
 		User user = userRepository
 				.findByOrganization_IdAndEmail(organizationId, normalizedEmail)
 				.orElseThrow(InvalidCredentialsException::new);
-		if (user.getAccountStatus() == AccountStatus.PENDING_INVITE) {
+		if (user.getAccountStatus() == AccountStatus.PENDING_INVITE
+				|| user.getAccountStatus() == AccountStatus.DEACTIVATED) {
 			throw new InvalidCredentialsException();
 		}
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -83,6 +84,9 @@ public class AuthService {
 			throw new InvalidRefreshTokenException();
 		}
 		User user = row.getUser();
+		if (user.getAccountStatus() == AccountStatus.DEACTIVATED) {
+			throw new InvalidRefreshTokenException();
+		}
 		row.revoke(now);
 		refreshTokenRepository.save(row);
 		return issueTokensForUser(user);
@@ -102,6 +106,9 @@ public class AuthService {
 	}
 
 	private TokenResponse issueTokensForUser(User user) {
+		if (user.getAccountStatus() != AccountStatus.ACTIVE) {
+			throw new InvalidRefreshTokenException();
+		}
 		String accessToken = jwtService.issueAccessToken(user.getId(), user.getOrganizationId(), user.getRole());
 		String rawRefresh = opaqueTokenService.generateRawToken();
 		String hash = opaqueTokenService.hashRawToken(rawRefresh);

@@ -9,3 +9,7 @@ databaseChangeLog:
       file: db/changelog/changes/0004-refresh-tokens.yaml
   - include:
       file: db/changelog/changes/0005-user-account-status-and-invite.yaml
+  - include:
+      file: db/changelog/changes/0006-user-deactivation-audit.yaml
+  - include:
+      file: db/changelog/changes/0007-deactivated-by-fk-on-delete-set-null.yaml

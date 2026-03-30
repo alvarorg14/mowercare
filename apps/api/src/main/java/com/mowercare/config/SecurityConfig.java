@@ -8,7 +8,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+
+import com.mowercare.security.AccountStatusVerificationFilter;
 
 /**
  * JWT bearer enforcement on protected routes; public auth, bootstrap, and OpenAPI paths.
@@ -23,7 +26,10 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, ApiAuthenticationEntryPoint authenticationEntryPoint)
+	SecurityFilterChain securityFilterChain(
+			HttpSecurity http,
+			ApiAuthenticationEntryPoint authenticationEntryPoint,
+			AccountStatusVerificationFilter accountStatusVerificationFilter)
 			throws Exception {
 		http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 		http.authorizeHttpRequests(auth -> auth
@@ -39,6 +45,7 @@ public class SecurityConfig {
 				.authenticated());
 		http.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()).authenticationEntryPoint(authenticationEntryPoint));
 		http.csrf(csrf -> csrf.disable());
+		http.addFilterAfter(accountStatusVerificationFilter, BearerTokenAuthenticationFilter.class);
 		return http.build();
 	}
 }

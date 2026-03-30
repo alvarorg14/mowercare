@@ -17,8 +17,10 @@ import com.mowercare.common.EmailNormalization;
 import com.mowercare.common.persistence.DataIntegrityViolations;
 import com.mowercare.config.InviteProperties;
 import com.mowercare.exception.InviteTokenInvalidException;
+import com.mowercare.exception.LastAdminDeactivationException;
 import com.mowercare.exception.LastAdminRemovalException;
 import com.mowercare.exception.ResourceNotFoundException;
+import com.mowercare.exception.UserDeactivatedManagementException;
 import com.mowercare.exception.UserEmailConflictException;
 import com.mowercare.model.AccountStatus;
 import com.mowercare.model.Organization;
@@ -29,6 +31,7 @@ import com.mowercare.model.request.UpdateEmployeeUserRoleRequest;
 import com.mowercare.model.response.CreateEmployeeUserResponse;
 import com.mowercare.model.response.EmployeeUserResponse;
 import com.mowercare.repository.OrganizationRepository;
+import com.mowercare.repository.RefreshTokenRepository;
 import com.mowercare.repository.UserRepository;
 import com.mowercare.security.RoleAuthorization;
 import com.mowercare.security.TenantPathAuthorization;
@@ -38,6 +41,7 @@ public class OrganizationUserService {
 
 	private final OrganizationRepository organizationRepository;
 	private final UserRepository userRepository;
+	private final RefreshTokenRepository refreshTokenRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final OpaqueTokenService opaqueTokenService;
 	private final InviteProperties inviteProperties;
@@ -46,12 +50,14 @@ public class OrganizationUserService {
 	public OrganizationUserService(
 			OrganizationRepository organizationRepository,
 			UserRepository userRepository,
+			RefreshTokenRepository refreshTokenRepository,
 			PasswordEncoder passwordEncoder,
 			OpaqueTokenService opaqueTokenService,
 			InviteProperties inviteProperties,
 			Clock clock) {
 		this.organizationRepository = organizationRepository;
 		this.userRepository = userRepository;
+		this.refreshTokenRepository = refreshTokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.opaqueTokenService = opaqueTokenService;
 		this.inviteProperties = inviteProperties;
@@ -82,17 +88,45 @@ public class OrganizationUserService {
 		User user = userRepository
 				.findByOrganization_IdAndId(organizationId, userId)
 				.orElseThrow(() -> new ResourceNotFoundException("User not found in this organization"));
+		if (user.getAccountStatus() == AccountStatus.DEACTIVATED) {
+			throw new UserDeactivatedManagementException();
+		}
 		UserRole newRole = request.role();
 		if (user.getRole() == newRole) {
 			return toListResponse(user);
 		}
 		if (user.getRole() == UserRole.ADMIN && newRole == UserRole.TECHNICIAN) {
 			userRepository.lockByOrganizationIdAndRole(organizationId, UserRole.ADMIN);
-			if (userRepository.countByOrganization_IdAndRole(organizationId, UserRole.ADMIN) == 1) {
+			if (userRepository.countByOrganization_IdAndRoleAndAccountStatus(organizationId, UserRole.ADMIN, AccountStatus.ACTIVE)
+					== 1) {
 				throw new LastAdminRemovalException();
 			}
 		}
 		user.updateRole(newRole);
+		userRepository.save(user);
+		return toListResponse(user);
+	}
+
+	@Transactional
+	public EmployeeUserResponse deactivateUser(UUID organizationId, UUID userId, Jwt jwt) {
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
+		RoleAuthorization.requireAdmin(jwt);
+		UUID actorId = UUID.fromString(jwt.getSubject());
+		User user = userRepository
+				.findByOrganization_IdAndId(organizationId, userId)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found in this organization"));
+		if (user.getAccountStatus() == AccountStatus.DEACTIVATED) {
+			return toListResponse(user);
+		}
+		if (user.getRole() == UserRole.ADMIN) {
+			userRepository.lockByOrganizationIdAndRole(organizationId, UserRole.ADMIN);
+			if (userRepository.countByOrganization_IdAndRoleAndAccountStatus(organizationId, UserRole.ADMIN, AccountStatus.ACTIVE)
+					== 1) {
+				throw new LastAdminDeactivationException();
+			}
+		}
+		user.deactivate(actorId, clock.instant());
+		refreshTokenRepository.deleteByUser_Id(user.getId());
 		userRepository.save(user);
 		return toListResponse(user);
 	}
