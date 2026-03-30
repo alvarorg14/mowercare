@@ -8,7 +8,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 @Configuration
@@ -21,9 +24,19 @@ public class JwtConfig {
 
 	@Bean
 	JwtEncoder jwtEncoder(JwtProperties properties) {
-		byte[] secret = requireSecret(properties.secret());
-		SecretKey secretKey = new SecretKeySpec(secret, "HmacSHA256");
-		return NimbusJwtEncoder.withSecretKey(secretKey).build();
+		return NimbusJwtEncoder.withSecretKey(hmacSha256KeyFromSecret(properties.secret())).build();
+	}
+
+	@Bean
+	JwtDecoder jwtDecoder(JwtProperties properties) {
+		NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(hmacSha256KeyFromSecret(properties.secret())).build();
+		decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.issuer()));
+		return decoder;
+	}
+
+	private static SecretKey hmacSha256KeyFromSecret(String secret) {
+		byte[] bytes = requireSecret(secret);
+		return new SecretKeySpec(bytes, "HmacSHA256");
 	}
 
 	private static byte[] requireSecret(String secret) {

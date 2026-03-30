@@ -23,6 +23,8 @@ class ApiExceptionHandlerTest {
 	private static final URI EXPECTED_TYPE_VALIDATION = URI.create("urn:mowercare:problem:VALIDATION_ERROR");
 	private static final URI EXPECTED_TYPE_AUTH_CREDENTIALS = URI.create("urn:mowercare:problem:AUTH_INVALID_CREDENTIALS");
 	private static final URI EXPECTED_TYPE_AUTH_REFRESH = URI.create("urn:mowercare:problem:AUTH_REFRESH_INVALID");
+	private static final URI EXPECTED_TYPE_TENANT_DENIED = URI.create("urn:mowercare:problem:TENANT_ACCESS_DENIED");
+	private static final URI EXPECTED_TYPE_AUTH_INVALID_TOKEN = URI.create("urn:mowercare:problem:AUTH_INVALID_TOKEN");
 
 	private ApiExceptionHandler handler;
 
@@ -98,6 +100,38 @@ class ApiExceptionHandlerTest {
 		assertThat(response.getBody().getProperties().get("code")).isEqualTo("AUTH_INVALID_CREDENTIALS");
 		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_AUTH_CREDENTIALS);
 		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/auth/login"));
+	}
+
+	@Test
+	@DisplayName("given InvalidAccessTokenClaimsException when handle then returns 401 AUTH_INVALID_TOKEN")
+	void givenInvalidAccessTokenClaims_whenHandle_thenUnauthorizedProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/organizations/00000000-0000-0000-0000-000000000001/tenant-scope");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.invalidAccessTokenClaims(new InvalidAccessTokenClaimsException(), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("AUTH_INVALID_TOKEN");
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_AUTH_INVALID_TOKEN);
+		assertThat(response.getBody().getInstance())
+				.isEqualTo(URI.create("/api/v1/organizations/00000000-0000-0000-0000-000000000001/tenant-scope"));
+	}
+
+	@Test
+	@DisplayName("given TenantAccessDeniedException when handle then returns 403 TENANT_ACCESS_DENIED")
+	void givenTenantAccessDenied_whenHandle_thenForbiddenProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/organizations/00000000-0000-0000-0000-000000000001/tenant-scope");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.tenantAccessDenied(new TenantAccessDeniedException(), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("TENANT_ACCESS_DENIED");
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_TENANT_DENIED);
+		assertThat(response.getBody().getInstance())
+				.isEqualTo(URI.create("/api/v1/organizations/00000000-0000-0000-0000-000000000001/tenant-scope"));
 	}
 
 	@Test

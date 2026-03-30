@@ -21,6 +21,8 @@ public class ApiExceptionHandler {
 	private static final URI TYPE_VALIDATION_ERROR = URI.create("urn:mowercare:problem:VALIDATION_ERROR");
 	private static final URI TYPE_AUTH_INVALID_CREDENTIALS = URI.create("urn:mowercare:problem:AUTH_INVALID_CREDENTIALS");
 	private static final URI TYPE_AUTH_REFRESH_INVALID = URI.create("urn:mowercare:problem:AUTH_REFRESH_INVALID");
+	private static final URI TYPE_AUTH_INVALID_TOKEN = URI.create("urn:mowercare:problem:AUTH_INVALID_TOKEN");
+	private static final URI TYPE_TENANT_ACCESS_DENIED = URI.create("urn:mowercare:problem:TENANT_ACCESS_DENIED");
 
 	@ExceptionHandler(InvalidBootstrapTokenException.class)
 	public ResponseEntity<ProblemDetail> invalidBootstrapToken(
@@ -61,6 +63,34 @@ public class ApiExceptionHandler {
 		pd.setInstance(requestInstance(request));
 		pd.setProperty("code", "AUTH_INVALID_CREDENTIALS");
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(InvalidAccessTokenClaimsException.class)
+	public ResponseEntity<ProblemDetail> invalidAccessTokenClaims(
+			InvalidAccessTokenClaimsException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.UNAUTHORIZED, "Access token is invalid, expired, or malformed.");
+		pd.setType(TYPE_AUTH_INVALID_TOKEN);
+		pd.setTitle("Unauthorized");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "AUTH_INVALID_TOKEN");
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(TenantAccessDeniedException.class)
+	public ResponseEntity<ProblemDetail> tenantAccessDenied(TenantAccessDeniedException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.FORBIDDEN,
+				"Access to the requested organization is not allowed for this token.");
+		pd.setType(TYPE_TENANT_ACCESS_DENIED);
+		pd.setTitle("Forbidden");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "TENANT_ACCESS_DENIED");
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.contentType(MediaType.parseMediaType("application/problem+json"))
 				.body(pd);
 	}

@@ -14,3 +14,7 @@
 - **Concurrent refresh / multiple valid refresh rows:** Same opaque token presented concurrently could theoretically create overlapping rotation attempts; less observed in production or tests.
 MVP acceptable per story scope.
 - **Unique `token_hash` violation on insert:** Astronomically rare hash collision would surface as a generic persistence error; defer dedicated handling un
+
+## Deferred from: code review of 1-5-global-api-security-and-tenant-context-on-protected-routes.md (2026-03-30)
+
+- **Duplicate `requestInstance` for Problem `instance` URI:** `ApiAuthenticationEntryPoint` and `ApiExceptionHandler` both implement identical `requestInstance(HttpServletRequest)` helpers; consolidate into a shared utility when error handling is next refactored.
