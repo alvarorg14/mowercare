@@ -13,12 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mowercare.exception.ForbiddenRoleException;
 import com.mowercare.model.Organization;
-import com.mowercare.model.UserRole;
 import com.mowercare.model.request.OrganizationProfilePatchRequest;
 import com.mowercare.model.response.OrganizationProfileResponse;
 import com.mowercare.repository.OrganizationRepository;
+import com.mowercare.security.RoleAuthorization;
 import com.mowercare.security.TenantPathAuthorization;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -77,10 +76,7 @@ public class OrganizationProfileController {
 			@AuthenticationPrincipal Jwt jwt,
 			@Valid @RequestBody OrganizationProfilePatchRequest body) {
 		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
-		String role = jwt.getClaimAsString("role");
-		if (!UserRole.ADMIN.name().equals(role)) {
-			throw new ForbiddenRoleException(UserRole.ADMIN);
-		}
+		RoleAuthorization.requireAdmin(jwt);
 		Organization org = organizationRepository
 				.findById(organizationId)
 				.orElseThrow(() -> new IllegalStateException("Organization not found for tenant"));
