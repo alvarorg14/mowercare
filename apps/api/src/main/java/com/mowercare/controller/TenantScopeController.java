@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mowercare.exception.InvalidAccessTokenClaimsException;
-import com.mowercare.exception.TenantAccessDeniedException;
 import com.mowercare.model.response.TenantScopeResponse;
+import com.mowercare.security.TenantPathAuthorization;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,24 +46,14 @@ public class TenantScopeController {
 	public TenantScopeResponse tenantScope(
 			@PathVariable @Schema(description = "Organization id from URL; must match JWT") UUID organizationId,
 			@AuthenticationPrincipal Jwt jwt) {
-		if (jwt == null) {
-			throw new InvalidAccessTokenClaimsException();
-		}
-		UUID jwtOrg = requireUuidClaim(jwt, "organizationId");
-		if (!organizationId.equals(jwtOrg)) {
-			throw new TenantAccessDeniedException();
-		}
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
 		UUID userId = requireSubjectAsUuid(jwt);
 		String role = jwt.getClaimAsString("role");
-		return new TenantScopeResponse(jwtOrg, userId, role);
+		return new TenantScopeResponse(organizationId, userId, role);
 	}
 
 	private static UUID requireSubjectAsUuid(Jwt jwt) {
 		return parseRequiredUuid(jwt.getSubject());
-	}
-
-	private static UUID requireUuidClaim(Jwt jwt, String claimName) {
-		return parseRequiredUuid(jwt.getClaimAsString(claimName));
 	}
 
 	private static UUID parseRequiredUuid(String raw) {

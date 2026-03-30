@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { verifyTenantScope } from './api';
 import { loginApi, logoutApi, refreshApi } from './auth-api';
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from './auth-storage';
-import { getOrganizationIdFromAccessToken } from './jwt-org';
+import { getOrganizationIdFromAccessToken, getRoleFromAccessToken } from './jwt-org';
 import { queryClient } from './queryClient';
 import { setSession } from './auth/session';
 import type { LoginFormValues } from './auth/login-schema';
@@ -38,14 +38,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const tokens = await refreshApi({ refreshToken: refresh });
         await setRefreshToken(tokens.refreshToken);
         const orgId = getOrganizationIdFromAccessToken(tokens.accessToken);
-        setSession(tokens.accessToken, tokens.tokenType, orgId);
+        setSession(tokens.accessToken, tokens.tokenType, orgId, getRoleFromAccessToken(tokens.accessToken));
         await verifyTenantScope();
         if (!cancelled) {
           setIsAuthenticated(true);
         }
       } catch {
         await clearRefreshToken();
-        setSession(null, 'Bearer', null);
+        setSession(null, 'Bearer', null, null);
         if (!cancelled) {
           setIsAuthenticated(false);
         }
@@ -71,15 +71,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const orgId = getOrganizationIdFromAccessToken(tokens.accessToken);
     if (!orgId) {
       await clearRefreshToken();
-      setSession(null, 'Bearer', null);
+      setSession(null, 'Bearer', null, null);
       throw new Error('Access token missing organization id');
     }
-    setSession(tokens.accessToken, tokens.tokenType, orgId);
+    setSession(tokens.accessToken, tokens.tokenType, orgId, getRoleFromAccessToken(tokens.accessToken));
     try {
       await verifyTenantScope();
     } catch (e) {
       await clearRefreshToken();
-      setSession(null, 'Bearer', null);
+      setSession(null, 'Bearer', null, null);
       throw e;
     }
     setIsAuthenticated(true);
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     await clearRefreshToken();
-    setSession(null, 'Bearer', null);
+    setSession(null, 'Bearer', null, null);
     setIsAuthenticated(false);
     queryClient.clear();
     router.replace('/');

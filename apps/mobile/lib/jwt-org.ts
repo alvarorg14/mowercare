@@ -1,3 +1,6 @@
+/** Matches `UserRole` enum names from the API (`JwtService.issueAccessToken`). */
+export type JwtRole = 'ADMIN' | 'TECHNICIAN';
+
 /**
  * Read organizationId claim from access JWT (no signature verification — server is source of truth).
  */
@@ -8,6 +11,23 @@ export function getOrganizationIdFromAccessToken(accessToken: string): string | 
     const payload = base64UrlToUtf8(parts[1]);
     const data = JSON.parse(payload) as { organizationId?: string };
     return typeof data.organizationId === 'string' ? data.organizationId : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read role claim from access JWT (no signature verification — server is source of truth).
+ */
+export function getRoleFromAccessToken(accessToken: string): JwtRole | null {
+  try {
+    const parts = accessToken.split('.');
+    if (parts.length < 2) return null;
+    const payload = base64UrlToUtf8(parts[1]);
+    const data = JSON.parse(payload) as { role?: string };
+    const r = data.role;
+    if (r === 'ADMIN' || r === 'TECHNICIAN') return r;
+    return null;
   } catch {
     return null;
   }

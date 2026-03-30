@@ -2,7 +2,7 @@ import { getApiBaseUrl } from './config';
 import { refreshApi } from './auth-api';
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from './auth-storage';
 import { getAccessToken, getSessionOrganizationId, getTokenType, setSession } from './auth/session';
-import { getOrganizationIdFromAccessToken } from './jwt-org';
+import { getOrganizationIdFromAccessToken, getRoleFromAccessToken } from './jwt-org';
 import { ApiProblemError, type ProblemBody } from './http';
 
 /**
@@ -15,11 +15,11 @@ export async function refreshSession(): Promise<boolean> {
     const tokens = await refreshApi({ refreshToken: refresh });
     await setRefreshToken(tokens.refreshToken);
     const orgId = getOrganizationIdFromAccessToken(tokens.accessToken);
-    setSession(tokens.accessToken, tokens.tokenType, orgId);
+    setSession(tokens.accessToken, tokens.tokenType, orgId, getRoleFromAccessToken(tokens.accessToken));
     return true;
   } catch {
     await clearRefreshToken();
-    setSession(null, 'Bearer', null);
+    setSession(null, 'Bearer', null, null);
     return false;
   }
 }

@@ -23,3 +23,7 @@ MVP acceptable per story scope.
 
 - **No request timeout on `fetch` in `lib/http.ts`:** Calls can hang indefinitely on bad networks; add `AbortSignal`/timeout when the app adopts a global HTTP policy.
 - **Empty `catch` on logout and session restore in `auth-context.tsx`:** Swallows errors for idempotent UX; consider structured logging or error reporting when observability is added.
+
+## Deferred from: code review of 1-8-organization-profile-read-update-for-admin.md (2026-03-30)
+
+- **`IllegalStateException` when organization row is missing after tenant authorization:** After JWT/path alignment, `OrganizationRepository.findById` should always hit the tenant org; if the row were deleted or inconsistent, the API would return **500** instead of a Problem Detail. Revisit if hardening data consistency or admin-delete flows.

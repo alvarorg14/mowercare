@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import { getApiBaseUrl } from '../../lib/config';
 
 export default function AppHomeScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { signOut } = useAuth();
   const shellQuery = useQuery({
     queryKey: ['shell-demo'],
@@ -34,6 +36,9 @@ export default function AppHomeScreen() {
         <Text variant="bodySmall" style={styles.muted}>
           API base (config): {apiBase}
         </Text>
+        <Button mode="outlined" onPress={() => router.push('/organization')}>
+          Organization
+        </Button>
         <Button mode="outlined" onPress={() => signOut()}>
           Sign out
         </Button>

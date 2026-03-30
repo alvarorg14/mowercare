@@ -23,6 +23,7 @@ public class ApiExceptionHandler {
 	private static final URI TYPE_AUTH_REFRESH_INVALID = URI.create("urn:mowercare:problem:AUTH_REFRESH_INVALID");
 	private static final URI TYPE_AUTH_INVALID_TOKEN = URI.create("urn:mowercare:problem:AUTH_INVALID_TOKEN");
 	private static final URI TYPE_TENANT_ACCESS_DENIED = URI.create("urn:mowercare:problem:TENANT_ACCESS_DENIED");
+	private static final URI TYPE_FORBIDDEN_ROLE = URI.create("urn:mowercare:problem:FORBIDDEN_ROLE");
 
 	@ExceptionHandler(InvalidBootstrapTokenException.class)
 	public ResponseEntity<ProblemDetail> invalidBootstrapToken(
@@ -77,6 +78,20 @@ public class ApiExceptionHandler {
 		pd.setInstance(requestInstance(request));
 		pd.setProperty("code", "AUTH_INVALID_TOKEN");
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(ForbiddenRoleException.class)
+	public ResponseEntity<ProblemDetail> forbiddenRole(ForbiddenRoleException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.FORBIDDEN,
+				"This action requires the " + ex.getRequiredRole().name() + " role.");
+		pd.setType(TYPE_FORBIDDEN_ROLE);
+		pd.setTitle("Forbidden");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "FORBIDDEN_ROLE");
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.contentType(MediaType.parseMediaType("application/problem+json"))
 				.body(pd);
 	}
