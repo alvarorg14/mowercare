@@ -18,5 +18,9 @@ public abstract class AbstractPostgresIntegrationTest {
 		registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
 		registry.add("spring.datasource.username", POSTGRES::getUsername);
 		registry.add("spring.datasource.password", POSTGRES::getPassword);
+		registry.add("mowercare.jwt.secret", () -> "test-jwt-secret-must-be-at-least-32-bytes-long!");
+		registry.add("mowercare.jwt.issuer", () -> "https://test.mowercare.local");
+		registry.add("mowercare.jwt.access-token-ttl", () -> "PT15M");
+		registry.add("mowercare.jwt.refresh-token-ttl", () -> "P7D");
 	}
 }

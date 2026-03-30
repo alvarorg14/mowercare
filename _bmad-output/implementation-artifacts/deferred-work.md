@@ -8,3 +8,9 @@
 ## Deferred from: code review of 1-3-bootstrap-first-organization-and-admin-user.md (2026-03-29)
 
 - **Permissive `SecurityConfig` (permitAll, CSRF off):** Intentional until Story 1.5 global API security; bootstrap remains protected by `X-Bootstrap-Token` at the application layer per story scope.
+
+## Deferred from: code review of 1-4-authentication-api-login-refresh-logout.md (2026-03-30)
+
+- **Concurrent refresh / multiple valid refresh rows:** Same opaque token presented concurrently could theoretically create overlapping rotation attempts; less observed in production or tests.
+MVP acceptable per story scope.
+- **Unique `token_hash` violation on insert:** Astronomically rare hash collision would surface as a generic persistence error; defer dedicated handling un

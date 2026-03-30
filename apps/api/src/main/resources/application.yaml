@@ -19,3 +19,9 @@ spring:
 mowercare:
   bootstrap:
     token: ${MOWERCARE_BOOTSTRAP_TOKEN:}
+  jwt:
+    issuer: ${MOWERCARE_JWT_ISSUER:https://api.mowercare.local}
+    # Minimum 32 UTF-8 bytes — set MOWERCARE_JWT_SECRET in env (see repo root .env.example)
+    secret: ${MOWERCARE_JWT_SECRET:}
+    access-token-ttl: ${MOWERCARE_JWT_ACCESS_TTL:PT15M}
+    refresh-token-ttl: ${MOWERCARE_JWT_REFRESH_TTL:P7D}

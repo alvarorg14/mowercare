@@ -20,6 +20,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.mowercare.model.UserRole;
 import com.mowercare.repository.OrganizationRepository;
+import com.mowercare.repository.RefreshTokenRepository;
 import com.mowercare.repository.UserRepository;
 import com.mowercare.testsupport.AbstractPostgresIntegrationTest;
 
@@ -44,8 +45,12 @@ class BootstrapOrganizationIT extends AbstractPostgresIntegrationTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
+
 	@BeforeEach
 	void cleanDatabase() {
+		refreshTokenRepository.deleteAll();
 		userRepository.deleteAll();
 		organizationRepository.deleteAll();
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();

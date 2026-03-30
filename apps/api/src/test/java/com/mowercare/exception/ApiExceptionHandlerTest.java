@@ -21,6 +21,8 @@ class ApiExceptionHandlerTest {
 	private static final URI EXPECTED_TYPE_UNAUTHORIZED = URI.create("urn:mowercare:problem:BOOTSTRAP_UNAUTHORIZED");
 	private static final URI EXPECTED_TYPE_CONFLICT = URI.create("urn:mowercare:problem:BOOTSTRAP_ALREADY_COMPLETED");
 	private static final URI EXPECTED_TYPE_VALIDATION = URI.create("urn:mowercare:problem:VALIDATION_ERROR");
+	private static final URI EXPECTED_TYPE_AUTH_CREDENTIALS = URI.create("urn:mowercare:problem:AUTH_INVALID_CREDENTIALS");
+	private static final URI EXPECTED_TYPE_AUTH_REFRESH = URI.create("urn:mowercare:problem:AUTH_REFRESH_INVALID");
 
 	private ApiExceptionHandler handler;
 
@@ -81,6 +83,36 @@ class ApiExceptionHandlerTest {
 		assertThat(response.getBody().getDetail()).contains("adminEmail");
 		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_VALIDATION);
 		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/bootstrap/organization"));
+	}
+
+	@Test
+	@DisplayName("given InvalidCredentialsException when handle then returns 401 AUTH_INVALID_CREDENTIALS")
+	void givenInvalidCredentials_whenHandle_thenUnauthorizedProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/auth/login");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.invalidCredentials(new InvalidCredentialsException(), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("AUTH_INVALID_CREDENTIALS");
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_AUTH_CREDENTIALS);
+		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/auth/login"));
+	}
+
+	@Test
+	@DisplayName("given InvalidRefreshTokenException when handle then returns 401 AUTH_REFRESH_INVALID")
+	void givenInvalidRefresh_whenHandle_thenUnauthorizedProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/auth/refresh");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.invalidRefresh(new InvalidRefreshTokenException(), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("AUTH_REFRESH_INVALID");
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_AUTH_REFRESH);
+		assertThat(response.getBody().getInstance()).isEqualTo(URI.create("/api/v1/auth/refresh"));
 	}
 
 	@Test

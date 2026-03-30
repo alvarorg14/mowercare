@@ -5,9 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import com.mowercare.config.BootstrapProperties;
+import com.mowercare.config.JwtProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(BootstrapProperties.class)
+@EnableConfigurationProperties({BootstrapProperties.class, JwtProperties.class})
 public class ApiApplication {
 
 	public static void main(String[] args) {

@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changes/0002-organizations-and-users.yaml
   - include:
       file: db/changelog/changes/0003-users-credentials-and-role.yaml
+  - include:
+      file: db/changelog/changes/0004-refresh-tokens.yaml

@@ -19,6 +19,8 @@ public class ApiExceptionHandler {
 	private static final URI TYPE_BOOTSTRAP_ALREADY_COMPLETED =
 			URI.create("urn:mowercare:problem:BOOTSTRAP_ALREADY_COMPLETED");
 	private static final URI TYPE_VALIDATION_ERROR = URI.create("urn:mowercare:problem:VALIDATION_ERROR");
+	private static final URI TYPE_AUTH_INVALID_CREDENTIALS = URI.create("urn:mowercare:problem:AUTH_INVALID_CREDENTIALS");
+	private static final URI TYPE_AUTH_REFRESH_INVALID = URI.create("urn:mowercare:problem:AUTH_REFRESH_INVALID");
 
 	@ExceptionHandler(InvalidBootstrapTokenException.class)
 	public ResponseEntity<ProblemDetail> invalidBootstrapToken(
@@ -46,6 +48,32 @@ public class ApiExceptionHandler {
 		pd.setInstance(requestInstance(request));
 		pd.setProperty("code", "BOOTSTRAP_ALREADY_COMPLETED");
 		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(InvalidCredentialsException.class)
+	public ResponseEntity<ProblemDetail> invalidCredentials(InvalidCredentialsException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.UNAUTHORIZED, "Invalid organization, email, or password.");
+		pd.setType(TYPE_AUTH_INVALID_CREDENTIALS);
+		pd.setTitle("Unauthorized");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "AUTH_INVALID_CREDENTIALS");
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(InvalidRefreshTokenException.class)
+	public ResponseEntity<ProblemDetail> invalidRefresh(InvalidRefreshTokenException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.UNAUTHORIZED, "Refresh token is invalid, expired, or revoked.");
+		pd.setType(TYPE_AUTH_REFRESH_INVALID);
+		pd.setTitle("Unauthorized");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "AUTH_REFRESH_INVALID");
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 				.contentType(MediaType.parseMediaType("application/problem+json"))
 				.body(pd);
 	}
