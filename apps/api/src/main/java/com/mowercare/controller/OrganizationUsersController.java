@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mowercare.exception.ResourceNotFoundException;
 import com.mowercare.model.request.CreateEmployeeUserRequest;
+import com.mowercare.model.request.UpdateEmployeeUserRoleRequest;
 import com.mowercare.model.response.CreateEmployeeUserResponse;
 import com.mowercare.model.response.EmployeeUserResponse;
 import com.mowercare.service.OrganizationUserService;
@@ -89,5 +91,27 @@ public class OrganizationUsersController {
 			@AuthenticationPrincipal Jwt jwt,
 			@Valid @RequestBody CreateEmployeeUserRequest body) {
 		return organizationUserService.createUser(organizationId, jwt, body);
+	}
+
+	@PatchMapping(value = "/{organizationId}/users/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(HttpStatus.OK)
+	@Operation(
+			summary = "Update an employee user's role",
+			description =
+					"Admin only. Existing access JWTs keep their original role claim until expiry or refresh/login — no server-side revocation list in MVP.")
+	@ApiResponse(
+			responseCode = "200",
+			description = "Updated user",
+			content = @Content(schema = @Schema(implementation = EmployeeUserResponse.class)))
+	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
+	@ApiResponse(responseCode = "404", description = "User not found in this organization")
+	@ApiResponse(responseCode = "409", description = "Cannot remove the last Admin (RFC 7807)")
+	@ApiResponse(responseCode = "403", description = "Tenant mismatch or not Admin (RFC 7807)")
+	public EmployeeUserResponse updateUserRole(
+			@PathVariable UUID organizationId,
+			@PathVariable UUID userId,
+			@AuthenticationPrincipal Jwt jwt,
+			@Valid @RequestBody UpdateEmployeeUserRoleRequest body) {
+		return organizationUserService.updateUserRole(organizationId, userId, jwt, body);
 	}
 }

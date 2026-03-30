@@ -34,6 +34,7 @@ public class ApiExceptionHandler {
 	private static final URI TYPE_USER_EMAIL_CONFLICT = URI.create("urn:mowercare:problem:USER_EMAIL_CONFLICT");
 	private static final URI TYPE_INVITE_TOKEN_INVALID = URI.create("urn:mowercare:problem:INVITE_TOKEN_INVALID");
 	private static final URI TYPE_NOT_FOUND = URI.create("urn:mowercare:problem:NOT_FOUND");
+	private static final URI TYPE_LAST_ADMIN_REMOVAL = URI.create("urn:mowercare:problem:LAST_ADMIN_REMOVAL");
 
 	@ExceptionHandler(ResourceNotFoundException.class)
 	public ResponseEntity<ProblemDetail> resourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
@@ -148,6 +149,20 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(UserEmailConflictException.class)
 	public ResponseEntity<ProblemDetail> userEmailConflict(UserEmailConflictException ignored, HttpServletRequest request) {
 		return conflictUserEmail(request);
+	}
+
+	@ExceptionHandler(LastAdminRemovalException.class)
+	public ResponseEntity<ProblemDetail> lastAdminRemoval(LastAdminRemovalException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.CONFLICT,
+				"The organization must retain at least one user with the Admin role.");
+		pd.setType(TYPE_LAST_ADMIN_REMOVAL);
+		pd.setTitle("Conflict");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "LAST_ADMIN_REMOVAL");
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

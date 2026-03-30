@@ -2,10 +2,13 @@ package com.mowercare.controller;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
 
@@ -14,6 +17,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -59,6 +64,9 @@ class OrganizationUsersIT extends AbstractPostgresIntegrationTest {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private JwtDecoder jwtDecoder;
 
 	@BeforeEach
 	void setUp() {
@@ -192,6 +200,197 @@ class OrganizationUsersIT extends AbstractPostgresIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("given admin when PATCH user role then 200 and refresh returns new role claim")
+	void givenAdmin_whenPatchRole_thenRefreshHasNewRoleClaim() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(
+								"{\"email\":\"techrole@acme.test\",\"role\":\"TECHNICIAN\",\"initialPassword\":\"secret12345\"}"))
+				.andExpect(status().isCreated());
+
+		MvcResult loginTech = mockMvc.perform(post("/api/v1/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(String.format(
+								"{\"organizationId\":\"%s\",\"email\":\"techrole@acme.test\",\"password\":\"secret12345\"}",
+								orgId)))
+				.andExpect(status().isOk())
+				.andReturn();
+		JsonNode techLogin = objectMapper.readTree(loginTech.getResponse().getContentAsString());
+		String refresh = techLogin.get("refreshToken").asText();
+		assertThat(roleFromAccessToken(techLogin.get("accessToken").asText())).isEqualTo("TECHNICIAN");
+
+		JsonNode techUser = objectMapper.readTree(
+				mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+								.header("Authorization", "Bearer " + adminAccess))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getResponse()
+						.getContentAsString());
+		String techUserId = null;
+		for (JsonNode n : techUser) {
+			if ("techrole@acme.test".equals(n.get("email").asText())) {
+				techUserId = n.get("id").asText();
+				break;
+			}
+		}
+		assertThat(techUserId).isNotNull();
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, techUserId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"ADMIN\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.role").value("ADMIN"));
+
+		MvcResult refreshResult = mockMvc.perform(post("/api/v1/auth/refresh")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"refreshToken\":\"" + refresh + "\"}"))
+				.andExpect(status().isOk())
+				.andReturn();
+		JsonNode afterRefresh = objectMapper.readTree(refreshResult.getResponse().getContentAsString());
+		assertThat(roleFromAccessToken(afterRefresh.get("accessToken").asText())).isEqualTo("ADMIN");
+	}
+
+	@Test
+	@DisplayName("given only admin when PATCH self to technician then 409 LAST_ADMIN_REMOVAL")
+	void givenOnlyAdmin_whenPatchSelfToTechnician_thenConflict() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String adminUserId = objectMapper
+				.readTree(
+						mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+										.header("Authorization", "Bearer " + adminAccess))
+								.andExpect(status().isOk())
+								.andReturn()
+								.getResponse()
+								.getContentAsString())
+				.get(0)
+				.get("id")
+				.asText();
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, adminUserId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"TECHNICIAN\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("LAST_ADMIN_REMOVAL"))
+				.andExpect(jsonPath("$.detail")
+						.value("The organization must retain at least one user with the Admin role."));
+	}
+
+	@Test
+	@DisplayName("given admin when PATCH user with same role then 200")
+	void givenAdmin_whenPatchSameRole_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String adminUserId = objectMapper
+				.readTree(
+						mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+										.header("Authorization", "Bearer " + adminAccess))
+								.andExpect(status().isOk())
+								.andReturn()
+								.getResponse()
+								.getContentAsString())
+				.get(0)
+				.get("id")
+				.asText();
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, adminUserId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"ADMIN\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.role").value("ADMIN"));
+	}
+
+	@Test
+	@DisplayName("given two admins when PATCH one to technician then 200")
+	void givenTwoAdmins_whenPatchOneToTechnician_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(
+								"{\"email\":\"admin2@acme.test\",\"role\":\"ADMIN\",\"initialPassword\":\"secret12345\"}"))
+				.andExpect(status().isCreated());
+
+		String bootstrapAdminId = null;
+		JsonNode users = objectMapper.readTree(
+				mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+								.header("Authorization", "Bearer " + adminAccess))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getResponse()
+						.getContentAsString());
+		for (JsonNode n : users) {
+			if ("admin@acme.test".equals(n.get("email").asText())) {
+				bootstrapAdminId = n.get("id").asText();
+				break;
+			}
+		}
+		assertThat(bootstrapAdminId).isNotNull();
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, bootstrapAdminId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"TECHNICIAN\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.role").value("TECHNICIAN"));
+	}
+
+	@Test
+	@DisplayName("given technician when PATCH user role then 403 FORBIDDEN_ROLE")
+	void givenTechnician_whenPatchUserRole_thenForbidden() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		seedTechnician(orgId);
+		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+		String randomUser = "00000000-0000-0000-0000-000000000099";
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, randomUser)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"ADMIN\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("FORBIDDEN_ROLE"));
+	}
+
+	@Test
+	@DisplayName("given admin when PATCH unknown userId then 404 NOT_FOUND")
+	void givenAdmin_whenPatchUnknownUser_thenNotFound() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String unknownId = "00000000-0000-0000-0000-000000000099";
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", orgId, unknownId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"TECHNICIAN\"}"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+	}
+
+	@Test
+	@DisplayName("given valid token wrong org path when PATCH user then 403 TENANT_ACCESS_DENIED")
+	void givenWrongOrg_whenPatchUser_thenTenantDenied() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String unknownId = "00000000-0000-0000-0000-000000000099";
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/users/{userId}", FOREIGN_ORG, unknownId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"role\":\"TECHNICIAN\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("TENANT_ACCESS_DENIED"));
+	}
+
+	@Test
 	@DisplayName("given valid token wrong org path when GET users then 403 TENANT_ACCESS_DENIED")
 	void givenWrongOrg_whenListUsers_thenTenantDenied() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();
@@ -232,6 +431,11 @@ class OrganizationUsersIT extends AbstractPostgresIntegrationTest {
 				.andReturn();
 		JsonNode json = objectMapper.readTree(mvcResult.getResponse().getContentAsString());
 		return json.get("organizationId").asText();
+	}
+
+	private String roleFromAccessToken(String accessToken) {
+		Jwt jwt = jwtDecoder.decode(accessToken);
+		return jwt.getClaimAsString("role");
 	}
 
 	private String loginAccessToken(String organizationId, String email, String password) throws Exception {

@@ -102,6 +102,11 @@ public class User {
 		this.inviteExpiresAt = null;
 	}
 
+	/** Org admin role change — business rules (e.g. last admin) enforced in the service. */
+	public void updateRole(UserRole newRole) {
+		this.role = newRole;
+	}
+
 	/**
 	 * Stable tenant key for authorization (avoids relying on callers to navigate the association).
 	 */

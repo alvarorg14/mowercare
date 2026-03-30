@@ -21,7 +21,8 @@ This document is the **implementation-facing** matrix for API routes. Update it 
 | `GET /api/v1/organizations/{organizationId}/users/{userId}` | Allow | Deny | Get one employee user |
 | `POST /api/v1/organizations/{organizationId}/users` | Allow | Deny | Create active user or invite (`PENDING_INVITE`); `409` `USER_EMAIL_CONFLICT` on duplicate email |
 | `POST /api/v1/auth/accept-invite` | N/A | N/A | **Unauthenticated** — complete invite with token + password; not a role-gated route |
-| Deactivate employee / PATCH role | Allow | Deny | Epic 2.3–2.4 (not implemented here) |
+| `PATCH /api/v1/organizations/{organizationId}/users/{userId}` (role) | Allow | Deny | Update employee role (`ADMIN` / `TECHNICIAN`); `409` `LAST_ADMIN_REMOVAL` if removing last Admin |
+| Deactivate employee | Allow | Deny | Epic 2.4 (not implemented here) |
 
 ## Issue operations (stubs until Epic 3)
 

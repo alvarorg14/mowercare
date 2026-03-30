@@ -17,6 +17,7 @@ import com.mowercare.common.EmailNormalization;
 import com.mowercare.common.persistence.DataIntegrityViolations;
 import com.mowercare.config.InviteProperties;
 import com.mowercare.exception.InviteTokenInvalidException;
+import com.mowercare.exception.LastAdminRemovalException;
 import com.mowercare.exception.ResourceNotFoundException;
 import com.mowercare.exception.UserEmailConflictException;
 import com.mowercare.model.AccountStatus;
@@ -24,6 +25,7 @@ import com.mowercare.model.Organization;
 import com.mowercare.model.User;
 import com.mowercare.model.UserRole;
 import com.mowercare.model.request.CreateEmployeeUserRequest;
+import com.mowercare.model.request.UpdateEmployeeUserRoleRequest;
 import com.mowercare.model.response.CreateEmployeeUserResponse;
 import com.mowercare.model.response.EmployeeUserResponse;
 import com.mowercare.repository.OrganizationRepository;
@@ -70,6 +72,29 @@ public class OrganizationUserService {
 		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
 		RoleAuthorization.requireAdmin(jwt);
 		return userRepository.findByOrganization_IdAndId(organizationId, userId).map(OrganizationUserService::toListResponse);
+	}
+
+	@Transactional
+	public EmployeeUserResponse updateUserRole(
+			UUID organizationId, UUID userId, Jwt jwt, UpdateEmployeeUserRoleRequest request) {
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
+		RoleAuthorization.requireAdmin(jwt);
+		User user = userRepository
+				.findByOrganization_IdAndId(organizationId, userId)
+				.orElseThrow(() -> new ResourceNotFoundException("User not found in this organization"));
+		UserRole newRole = request.role();
+		if (user.getRole() == newRole) {
+			return toListResponse(user);
+		}
+		if (user.getRole() == UserRole.ADMIN && newRole == UserRole.TECHNICIAN) {
+			userRepository.lockByOrganizationIdAndRole(organizationId, UserRole.ADMIN);
+			if (userRepository.countByOrganization_IdAndRole(organizationId, UserRole.ADMIN) == 1) {
+				throw new LastAdminRemovalException();
+			}
+		}
+		user.updateRole(newRole);
+		userRepository.save(user);
+		return toListResponse(user);
 	}
 
 	@Transactional

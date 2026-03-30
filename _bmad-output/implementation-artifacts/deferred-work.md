@@ -36,3 +36,7 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 2-2-invite-or-create-employee-user.md (2026-03-30)
 
 - **AC8 OpenAPI automated verification:** Story acceptance criteria allow optional manual or light smoke for `/v3/api-docs`; no CI check was added. Add an automated smoke test later if API contract regressions become a risk.
+
+## Deferred from: code review of 2-3-assign-roles-to-employees.md (2026-03-30)
+
+- **`lockByOrganizationIdAndRole` pessimistic lock scope:** Loads all users with `ADMIN` role in the org for locking; fine for typical org sizes; revisit if very large admin sets or lock contention become an issue.
