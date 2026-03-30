@@ -7,7 +7,7 @@ Service management for robotic lawn mower installations: issue tracking, notific
 | Path | Description |
 |------|-------------|
 | `apps/api` | Spring Boot 4.x API (Maven, Java 25, PostgreSQL, Liquibase) |
-| `apps/mobile` | Expo (React Native) client — **blank TypeScript** template |
+| `apps/mobile` | Expo (React Native) client — Router, Paper, TanStack Query |
 | `_bmad-output/` | Planning and implementation artifacts (BMad) |
 
 ## Prerequisites
@@ -52,7 +52,7 @@ cd apps/mobile
 npx expo start
 ```
 
-Use the Expo CLI prompts to open iOS simulator, Android emulator, or web. The template used is **blank TypeScript** (see `apps/mobile/package.json` / `app.json` for the Expo SDK version).
+Use the Expo CLI prompts to open iOS simulator, Android emulator, or web. The app uses **Expo Router**, **React Native Paper**, and **TanStack Query** (see `apps/mobile/package.json` / `app.config.ts` for the Expo SDK version).
 
 ## CI
 
