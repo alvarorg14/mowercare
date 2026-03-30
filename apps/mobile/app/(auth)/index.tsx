@@ -49,6 +49,9 @@ export default function AuthWelcomeScreen() {
         <Text variant="bodyMedium" style={styles.subtitle}>
           Sign in with your organization ID and employee credentials
         </Text>
+        <Text variant="bodySmall" style={styles.fr27Note}>
+          Accounts are provisioned by your organization — there is no public sign-up.
+        </Text>
 
         <Controller
           control={control}
@@ -150,5 +153,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   subtitle: { textAlign: 'center', opacity: 0.8, marginBottom: 12 },
+  fr27Note: { textAlign: 'center', opacity: 0.75, marginBottom: 12 },
   banner: { marginBottom: 8 },
 });

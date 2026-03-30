@@ -10,6 +10,10 @@ Service management for robotic lawn mower installations: issue tracking, notific
 | `apps/mobile` | Expo (React Native) client — Router, Paper, TanStack Query |
 | `_bmad-output/` | Planning and implementation artifacts (BMad) |
 
+## Access model (FR27)
+
+The product is **employee-only** in v1: **no** public self-registration and **no** end-customer app access. The first organization is created via **bootstrap** (below); additional users are **invited or created by an Org Admin**. See [`docs/employee-only-access.md`](docs/employee-only-access.md).
+
 ## Prerequisites
 
 - **JDK 25** (for the API)

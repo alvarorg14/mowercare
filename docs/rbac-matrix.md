@@ -2,6 +2,8 @@
 
 Authoritative product intent: [`_bmad-output/planning-artifacts/prd.md`](../_bmad-output/planning-artifacts/prd.md) — **RBAC matrix (product requirements level)**.
 
+**FR27:** Interactive API and mobile use are limited to **organization employees** (Admin / Technician). There are **no** end-customer accounts or client access in v1 — see [`employee-only-access.md`](employee-only-access.md).
+
 This document is the **implementation-facing** matrix for API routes. Update it when new endpoints ship or when Epic 3 issue rules refine visibility (“Mine” vs “All”).
 
 ## Roles
@@ -38,4 +40,4 @@ If path `organizationId` ≠ JWT `organizationId`, the API returns **`403`** `TE
 
 ## Mobile
 
-The app reads the JWT **`role`** claim (and caches it with session refresh) to gate UI such as org profile edit vs read-only. **Settings** (`/settings`) links to **Organization** and **Team**; **Team** lists, invites, changes roles, and deactivates users only when `role === ADMIN` — technicians see an explanation instead of admin actions. **No secrets** in the client; use the same Problem Details **`code`** values for messaging. See [`_bmad-output/planning-artifacts/architecture.md`](../_bmad-output/planning-artifacts/architecture.md).
+The app is for **employees only** (FR27): sign-in is for org credentials; there is **no** customer self-registration flow. The app reads the JWT **`role`** claim (and caches it with session refresh) to gate UI such as org profile edit vs read-only. **Settings** (`/settings`) links to **Organization** and **Team**; **Team** lists, invites, changes roles, and deactivates users only when `role === ADMIN` — technicians see an explanation instead of admin actions. **No secrets** in the client; use the same Problem Details **`code`** values for messaging. See [`_bmad-output/planning-artifacts/architecture.md`](../_bmad-output/planning-artifacts/architecture.md).
