@@ -1,7 +1,8 @@
 import Constants from 'expo-constants';
 
-/** Single default for `app.config` `extra` and runtime fallback (AC4). */
-export const DEFAULT_API_BASE_URL = 'http://localhost:8080';
+import { DEFAULT_API_BASE_URL } from '../default-api-base-url.js';
+
+export { DEFAULT_API_BASE_URL };
 
 function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, '');

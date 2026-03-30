@@ -1,22 +1,115 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+
+import { verifyTenantScope } from './api';
+import { loginApi, logoutApi, refreshApi } from './auth-api';
+import { clearRefreshToken, getRefreshToken, setRefreshToken } from './auth-storage';
+import { getOrganizationIdFromAccessToken } from './jwt-org';
+import { queryClient } from './queryClient';
+import { setSession } from './auth/session';
+import type { LoginFormValues } from './auth/login-schema';
 
 type AuthContextValue = {
   isAuthenticated: boolean;
-  signInPlaceholder: () => void;
-  signOutPlaceholder: () => void;
+  isRestoringSession: boolean;
+  signIn: (data: LoginFormValues) => Promise<void>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const signInPlaceholder = useCallback(() => setIsAuthenticated(true), []);
-  const signOutPlaceholder = useCallback(() => setIsAuthenticated(false), []);
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const refresh = await getRefreshToken();
+      if (!refresh) {
+        if (!cancelled) {
+          setIsRestoringSession(false);
+        }
+        return;
+      }
+      try {
+        const tokens = await refreshApi({ refreshToken: refresh });
+        await setRefreshToken(tokens.refreshToken);
+        const orgId = getOrganizationIdFromAccessToken(tokens.accessToken);
+        setSession(tokens.accessToken, tokens.tokenType, orgId);
+        await verifyTenantScope();
+        if (!cancelled) {
+          setIsAuthenticated(true);
+        }
+      } catch {
+        await clearRefreshToken();
+        setSession(null, 'Bearer', null);
+        if (!cancelled) {
+          setIsAuthenticated(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRestoringSession(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const signIn = useCallback(async (data: LoginFormValues) => {
+    const tokens = await loginApi({
+      organizationId: data.organizationId,
+      email: data.email,
+      password: data.password,
+    });
+    await setRefreshToken(tokens.refreshToken);
+    const orgId = getOrganizationIdFromAccessToken(tokens.accessToken);
+    if (!orgId) {
+      await clearRefreshToken();
+      setSession(null, 'Bearer', null);
+      throw new Error('Access token missing organization id');
+    }
+    setSession(tokens.accessToken, tokens.tokenType, orgId);
+    try {
+      await verifyTenantScope();
+    } catch (e) {
+      await clearRefreshToken();
+      setSession(null, 'Bearer', null);
+      throw e;
+    }
+    setIsAuthenticated(true);
+    router.replace('/');
+  }, [router]);
+
+  const signOut = useCallback(async () => {
+    const refresh = await getRefreshToken();
+    if (refresh) {
+      try {
+        await logoutApi({ refreshToken: refresh });
+      } catch {
+        /* idempotent local sign-out even if 401 */
+      }
+    }
+    await clearRefreshToken();
+    setSession(null, 'Bearer', null);
+    setIsAuthenticated(false);
+    queryClient.clear();
+    router.replace('/');
+  }, [router]);
 
   const value = useMemo(
-    () => ({ isAuthenticated, signInPlaceholder, signOutPlaceholder }),
-    [isAuthenticated, signInPlaceholder, signOutPlaceholder],
+    () => ({
+      isAuthenticated,
+      isRestoringSession,
+      signIn,
+      signOut,
+    }),
+    [isAuthenticated, isRestoringSession, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

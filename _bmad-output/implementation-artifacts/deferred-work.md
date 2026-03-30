@@ -18,3 +18,8 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 1-5-global-api-security-and-tenant-context-on-protected-routes.md (2026-03-30)
 
 - **Duplicate `requestInstance` for Problem `instance` URI:** `ApiAuthenticationEntryPoint` and `ApiExceptionHandler` both implement identical `requestInstance(HttpServletRequest)` helpers; consolidate into a shared utility when error handling is next refactored.
+
+## Deferred from: code review of 1-7-mobile-sign-in-and-sign-out.md (2026-03-30)
+
+- **No request timeout on `fetch` in `lib/http.ts`:** Calls can hang indefinitely on bad networks; add `AbortSignal`/timeout when the app adopts a global HTTP policy.
+- **Empty `catch` on logout and session restore in `auth-context.tsx`:** Swallows errors for idempotent UX; consider structured logging or error reporting when observability is added.

@@ -18,3 +18,6 @@ export function createQueryClient(): QueryClient {
     },
   });
 }
+
+/** Singleton for sign-out cache clear and root layout. */
+export const queryClient = createQueryClient();

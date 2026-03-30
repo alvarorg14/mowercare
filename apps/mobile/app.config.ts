@@ -1,6 +1,10 @@
 import type { ExpoConfig } from 'expo/config';
 
-import { DEFAULT_API_BASE_URL } from './lib/config';
+// CJS module — `expo config` evaluates this without resolving sibling `.ts` under `lib/`.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { DEFAULT_API_BASE_URL } = require('./default-api-base-url.js') as {
+  DEFAULT_API_BASE_URL: string;
+};
 
 /** Public API origin for dev; physical devices need LAN IP or tunnel (not committed). */
 const apiBaseUrl =
