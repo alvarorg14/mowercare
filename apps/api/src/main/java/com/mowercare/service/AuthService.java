@@ -8,7 +8,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mowercare.common.EmailNormalization;
 import com.mowercare.config.JwtProperties;
+import com.mowercare.model.AccountStatus;
 import com.mowercare.exception.InvalidCredentialsException;
 import com.mowercare.exception.InvalidRefreshTokenException;
 import com.mowercare.model.RefreshToken;
@@ -55,10 +57,13 @@ public class AuthService {
 
 	@Transactional
 	public TokenResponse login(UUID organizationId, String email, String password) {
-		String normalizedEmail = normalizeEmail(email);
+		String normalizedEmail = EmailNormalization.normalize(email);
 		User user = userRepository
 				.findByOrganization_IdAndEmail(organizationId, normalizedEmail)
 				.orElseThrow(InvalidCredentialsException::new);
+		if (user.getAccountStatus() == AccountStatus.PENDING_INVITE) {
+			throw new InvalidCredentialsException();
+		}
 		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
 			throw new InvalidCredentialsException();
 		}
@@ -108,7 +113,4 @@ public class AuthService {
 		return new TokenResponse(accessToken, rawRefresh, "Bearer", expiresInSeconds);
 	}
 
-	private static String normalizeEmail(String email) {
-		return email.trim().toLowerCase(java.util.Locale.ROOT);
-	}
 }

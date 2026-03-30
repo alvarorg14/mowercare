@@ -50,6 +50,16 @@ public class User {
 	@Column(nullable = false, length = 32)
 	private UserRole role;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "account_status", nullable = false, length = 32)
+	private AccountStatus accountStatus;
+
+	@Column(name = "invite_token_hash", length = 64)
+	private String inviteTokenHash;
+
+	@Column(name = "invite_expires_at")
+	private Instant inviteExpiresAt;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
@@ -59,10 +69,37 @@ public class User {
 	private Instant updatedAt;
 
 	public User(Organization organization, String email, String passwordHash, UserRole role) {
+		this(organization, email, passwordHash, role, AccountStatus.ACTIVE, null, null);
+	}
+
+	public User(
+			Organization organization,
+			String email,
+			String passwordHash,
+			UserRole role,
+			AccountStatus accountStatus,
+			String inviteTokenHash,
+			Instant inviteExpiresAt) {
 		this.organization = organization;
 		this.email = email;
 		this.passwordHash = passwordHash;
 		this.role = role;
+		this.accountStatus = accountStatus;
+		this.inviteTokenHash = inviteTokenHash;
+		this.inviteExpiresAt = inviteExpiresAt;
+	}
+
+	/**
+	 * Completes invite acceptance: sets password and clears invite fields.
+	 */
+	public void activateFromInvite(String newPasswordHash) {
+		if (accountStatus != AccountStatus.PENDING_INVITE) {
+			throw new IllegalStateException("Account is not pending invite");
+		}
+		this.passwordHash = newPasswordHash;
+		this.accountStatus = AccountStatus.ACTIVE;
+		this.inviteTokenHash = null;
+		this.inviteExpiresAt = null;
 	}
 
 	/**

@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: "0005-user-account-status-and-invite"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: account_status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+                    defaultValue: ACTIVE
+              - column:
+                  name: invite_token_hash
+                  type: varchar(64)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: invite_expires_at
+                  type: timestamptz
+                  constraints:
+                    nullable: true
+        - addUniqueConstraint:
+            constraintName: uq_users_invite_token_hash
+            tableName: users
+            columnNames: invite_token_hash
+      rollback:
+        - dropUniqueConstraint:
+            constraintName: uq_users_invite_token_hash
+            tableName: users
+        - dropColumn:
+            tableName: users
+            columnName: account_status
+        - dropColumn:
+            tableName: users
+            columnName: invite_token_hash
+        - dropColumn:
+            tableName: users
+            columnName: invite_expires_at

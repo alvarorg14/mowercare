@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/0003-users-credentials-and-role.yaml
   - include:
       file: db/changelog/changes/0004-refresh-tokens.yaml
+  - include:
+      file: db/changelog/changes/0005-user-account-status-and-invite.yaml

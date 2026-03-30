@@ -5,10 +5,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import com.mowercare.config.BootstrapProperties;
+import com.mowercare.config.InviteProperties;
 import com.mowercare.config.JwtProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({BootstrapProperties.class, JwtProperties.class})
+@EnableConfigurationProperties({BootstrapProperties.class, JwtProperties.class, InviteProperties.class})
 public class ApiApplication {
 
 	public static void main(String[] args) {

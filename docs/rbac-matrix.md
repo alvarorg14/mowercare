@@ -17,7 +17,11 @@ This document is the **implementation-facing** matrix for API routes. Update it 
 |-----------|-------|------------|-------|
 | `GET /api/v1/organizations/{organizationId}/profile` | Allow | Allow | Read org name |
 | `PATCH /api/v1/organizations/{organizationId}/profile` | Allow | Deny | `403` `FORBIDDEN_ROLE` |
-| User invite / create / deactivate / assign role | Allow | Deny | Epic 2.2+ (not implemented here) |
+| `GET /api/v1/organizations/{organizationId}/users` | Allow | Deny | List employee users (email, role, account status) |
+| `GET /api/v1/organizations/{organizationId}/users/{userId}` | Allow | Deny | Get one employee user |
+| `POST /api/v1/organizations/{organizationId}/users` | Allow | Deny | Create active user or invite (`PENDING_INVITE`); `409` `USER_EMAIL_CONFLICT` on duplicate email |
+| `POST /api/v1/auth/accept-invite` | N/A | N/A | **Unauthenticated** — complete invite with token + password; not a role-gated route |
+| Deactivate employee / PATCH role | Allow | Deny | Epic 2.3–2.4 (not implemented here) |
 
 ## Issue operations (stubs until Epic 3)
 

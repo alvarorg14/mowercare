@@ -4,6 +4,9 @@ import java.net.URI;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -12,8 +15,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.mowercare.common.persistence.DataIntegrityViolations;
+
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
 	private static final URI TYPE_BOOTSTRAP_UNAUTHORIZED = URI.create("urn:mowercare:problem:BOOTSTRAP_UNAUTHORIZED");
 	private static final URI TYPE_BOOTSTRAP_ALREADY_COMPLETED =
@@ -24,6 +31,21 @@ public class ApiExceptionHandler {
 	private static final URI TYPE_AUTH_INVALID_TOKEN = URI.create("urn:mowercare:problem:AUTH_INVALID_TOKEN");
 	private static final URI TYPE_TENANT_ACCESS_DENIED = URI.create("urn:mowercare:problem:TENANT_ACCESS_DENIED");
 	private static final URI TYPE_FORBIDDEN_ROLE = URI.create("urn:mowercare:problem:FORBIDDEN_ROLE");
+	private static final URI TYPE_USER_EMAIL_CONFLICT = URI.create("urn:mowercare:problem:USER_EMAIL_CONFLICT");
+	private static final URI TYPE_INVITE_TOKEN_INVALID = URI.create("urn:mowercare:problem:INVITE_TOKEN_INVALID");
+	private static final URI TYPE_NOT_FOUND = URI.create("urn:mowercare:problem:NOT_FOUND");
+
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<ProblemDetail> resourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+		pd.setType(TYPE_NOT_FOUND);
+		pd.setTitle("Not Found");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "NOT_FOUND");
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
 
 	@ExceptionHandler(InvalidBootstrapTokenException.class)
 	public ResponseEntity<ProblemDetail> invalidBootstrapToken(
@@ -123,6 +145,40 @@ public class ApiExceptionHandler {
 				.body(pd);
 	}
 
+	@ExceptionHandler(UserEmailConflictException.class)
+	public ResponseEntity<ProblemDetail> userEmailConflict(UserEmailConflictException ignored, HttpServletRequest request) {
+		return conflictUserEmail(request);
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ProblemDetail> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+		if (DataIntegrityViolations.isDuplicateOrgEmail(ex)) {
+			return conflictUserEmail(request);
+		}
+		log.warn("Unhandled data integrity violation", ex);
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.INTERNAL_SERVER_ERROR, "A database constraint was violated.");
+		pd.setTitle("Internal Server Error");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "DATA_CONSTRAINT_VIOLATION");
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(InviteTokenInvalidException.class)
+	public ResponseEntity<ProblemDetail> inviteTokenInvalid(InviteTokenInvalidException ignored, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.BAD_REQUEST, "Invite token is invalid, expired, or already used.");
+		pd.setType(TYPE_INVITE_TOKEN_INVALID);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "INVITE_TOKEN_INVALID");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex, HttpServletRequest request) {
 		String violations = String.join(
@@ -137,6 +193,18 @@ public class ApiExceptionHandler {
 		pd.setInstance(requestInstance(request));
 		pd.setProperty("code", "VALIDATION_ERROR");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	private ResponseEntity<ProblemDetail> conflictUserEmail(HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+				HttpStatus.CONFLICT, "An employee with this email already exists for this organization.");
+		pd.setType(TYPE_USER_EMAIL_CONFLICT);
+		pd.setTitle("Conflict");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "USER_EMAIL_CONFLICT");
+		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.contentType(MediaType.parseMediaType("application/problem+json"))
 				.body(pd);
 	}

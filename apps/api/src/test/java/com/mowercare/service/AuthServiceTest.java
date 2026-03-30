@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.mowercare.config.JwtProperties;
 import com.mowercare.exception.InvalidCredentialsException;
+import com.mowercare.model.AccountStatus;
 import com.mowercare.model.RefreshToken;
 import com.mowercare.model.User;
 import com.mowercare.model.UserRole;
@@ -83,6 +84,7 @@ class AuthServiceTest {
 		when(user.getOrganizationId()).thenReturn(orgId);
 		when(user.getRole()).thenReturn(UserRole.ADMIN);
 		when(user.getPasswordHash()).thenReturn("hash");
+		when(user.getAccountStatus()).thenReturn(AccountStatus.ACTIVE);
 	}
 
 	@Test
@@ -112,6 +114,18 @@ class AuthServiceTest {
 		assertThatThrownBy(() -> authService.login(orgId, "a@test.local", "x"))
 				.isInstanceOf(InvalidCredentialsException.class);
 		verify(passwordEncoder, never()).matches(any(), any());
+	}
+
+	@Test
+	@DisplayName("given pending invite when login then throws InvalidCredentialsException")
+	void givenPendingInvite_whenLogin_thenThrows() {
+		when(userRepository.findByOrganization_IdAndEmail(orgId, "admin@test.local")).thenReturn(Optional.of(user));
+		when(user.getAccountStatus()).thenReturn(AccountStatus.PENDING_INVITE);
+
+		assertThatThrownBy(() -> authService.login(orgId, "admin@test.local", "secret12345"))
+				.isInstanceOf(InvalidCredentialsException.class);
+		verify(passwordEncoder, never()).matches(any(), any());
+		verify(refreshTokenRepository, never()).save(any());
 	}
 
 	@Test

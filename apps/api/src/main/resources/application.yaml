@@ -19,6 +19,8 @@ spring:
 mowercare:
   bootstrap:
     token: ${MOWERCARE_BOOTSTRAP_TOKEN:}
+  invite:
+    token-ttl: ${MOWERCARE_INVITE_TOKEN_TTL:P14D}
   jwt:
     issuer: ${MOWERCARE_JWT_ISSUER:https://api.mowercare.local}
     # Minimum 32 UTF-8 bytes — set MOWERCARE_JWT_SECRET in env (see repo root .env.example)

@@ -32,3 +32,7 @@ MVP acceptable per story scope.
 
 - **Sprint-status churn bundled with feature work:** `sprint-status.yaml` updates Epic 1 completion and retrospective alongside Story 2-1 state; smaller commits can make history and cherry-picks clearer.
 - **RBAC matrix relative links:** Paths from `docs/rbac-matrix.md` into `_bmad-output` assume repository layout; validate or replace when documentation is published to a standalone site.
+
+## Deferred from: code review of 2-2-invite-or-create-employee-user.md (2026-03-30)
+
+- **AC8 OpenAPI automated verification:** Story acceptance criteria allow optional manual or light smoke for `/v3/api-docs`; no CI check was added. Add an automated smoke test later if API contract regressions become a risk.

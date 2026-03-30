@@ -8,11 +8,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mowercare.model.request.AcceptInviteRequest;
 import com.mowercare.model.request.LoginRequest;
 import com.mowercare.model.request.LogoutRequest;
 import com.mowercare.model.request.RefreshRequest;
 import com.mowercare.model.response.TokenResponse;
 import com.mowercare.service.AuthService;
+import com.mowercare.service.OrganizationUserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,9 +29,11 @@ import jakarta.validation.Valid;
 public class AuthController {
 
 	private final AuthService authService;
+	private final OrganizationUserService organizationUserService;
 
-	public AuthController(AuthService authService) {
+	public AuthController(AuthService authService, OrganizationUserService organizationUserService) {
 		this.authService = authService;
+		this.organizationUserService = organizationUserService;
 	}
 
 	@PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -61,5 +65,17 @@ public class AuthController {
 	@ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
 	public void logout(@Valid @RequestBody LogoutRequest request) {
 		authService.logout(request.refreshToken());
+	}
+
+	@PostMapping(value = "/accept-invite", consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@Operation(
+			summary = "Accept employee invite and set password",
+			description =
+					"Unauthenticated. Pending accounts cannot sign in until this succeeds (see login). Token is single-use; not sent by email in MVP.")
+	@ApiResponse(responseCode = "204", description = "Password set; account is active")
+	@ApiResponse(responseCode = "400", description = "Invalid or expired invite token (RFC 7807)")
+	public void acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
+		organizationUserService.acceptInvite(request.token(), request.password());
 	}
 }
