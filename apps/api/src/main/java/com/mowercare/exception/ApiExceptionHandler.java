@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -207,6 +208,20 @@ public class ApiExceptionHandler {
 		pd.setTitle("Bad Request");
 		pd.setInstance(requestInstance(request));
 		pd.setProperty("code", "INVITE_TOKEN_INVALID");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ProblemDetail> messageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+		log.debug("Failed to read HTTP message: {}", ex.getMessage());
+		String detail = "Request body could not be parsed. Check JSON syntax and enum values.";
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+		pd.setType(TYPE_VALIDATION_ERROR);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "VALIDATION_ERROR");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.contentType(MediaType.parseMediaType("application/problem+json"))
 				.body(pd);

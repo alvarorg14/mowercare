@@ -26,15 +26,15 @@ This document is the **implementation-facing** matrix for API routes. Update it 
 | `PATCH /api/v1/organizations/{organizationId}/users/{userId}` (role) | Allow | Deny | Update employee role (`ADMIN` / `TECHNICIAN`); `409` `LAST_ADMIN_REMOVAL` if removing last Admin |
 | `POST /api/v1/organizations/{organizationId}/users/{userId}/deactivate` | Allow | Deny | Deactivate employee; `409` `LAST_ADMIN_DEACTIVATION` if last active Admin |
 
-## Issue operations (stubs until Epic 3)
+## Issue operations (Epic 3 — partial)
 
-Persistence for **`issues`** / **`issue_change_events`** exists (Story 3.1); HTTP routes below still return **stubs** until Story 3.2 wires real create/list/detail.
+Persistence for **`issues`** / **`issue_change_events`** exists (Story 3.1). **Create issue** is live (Story 3.2); **list** and **detail** follow in later stories.
 
 | Operation | Admin | Technician | Notes |
 |-----------|-------|------------|-------|
-| `GET /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Stub list — Epic 3 replaces with real data |
-| `POST /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Stub create — aligns with FR11 direction |
-| `POST /api/v1/organizations/{organizationId}/issues/_admin/reassign` | Allow | Deny | Stub admin-only action (`403` `FORBIDDEN_ROLE`) |
+| `GET /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Stub empty list until Story 3.3 |
+| `POST /api/v1/organizations/{organizationId}/issues` | Allow | Allow | **Create issue** (FR11/FR12) — persists via `IssueService` |
+| `POST /api/v1/organizations/{organizationId}/issues/_admin/reassign` | Allow | Deny | Stub admin-only action (`403` `FORBIDDEN_ROLE`) until later stories |
 
 ## Tenant boundary (all roles)
 

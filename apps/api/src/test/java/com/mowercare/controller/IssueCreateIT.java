@@ -1,9 +1,7 @@
 package com.mowercare.controller;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,7 +12,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,9 +21,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mowercare.model.Organization;
-import com.mowercare.model.User;
-import com.mowercare.model.UserRole;
 import com.mowercare.repository.IssueChangeEventRepository;
 import com.mowercare.repository.IssueRepository;
 import com.mowercare.repository.OrganizationRepository;
@@ -34,7 +28,7 @@ import com.mowercare.repository.RefreshTokenRepository;
 import com.mowercare.repository.UserRepository;
 import com.mowercare.testsupport.AbstractPostgresIntegrationTest;
 
-class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
+class IssueCreateIT extends AbstractPostgresIntegrationTest {
 
 	private static final String BOOTSTRAP_TOKEN = "it-bootstrap-token-secret";
 
@@ -42,6 +36,9 @@ class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
 			"{\"organizationName\":\"Acme Mowers\",\"adminEmail\":\"admin@acme.test\",\"adminPassword\":\"secret12345\"}";
 
 	private static final UUID FOREIGN_ORG = UUID.fromString("00000000-0000-0000-0000-000000000042");
+
+	private static final String VALID_CREATE =
+			"{\"title\":\"Valid\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}";
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -65,9 +62,6 @@ class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
 	@Autowired
 	private RefreshTokenRepository refreshTokenRepository;
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-
 	@BeforeEach
 	void setUp() {
 		issueChangeEventRepository.deleteAll();
@@ -84,123 +78,79 @@ class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("given technician when POST admin reassign stub then 403 FORBIDDEN_ROLE")
-	void givenTechnician_whenAdminReassign_thenForbidden() throws Exception {
-		String orgId = bootstrapAndGetOrganizationId();
-		seedTechnician(orgId);
-		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
-
-		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues/_admin/reassign", orgId)
-						.header("Authorization", "Bearer " + access))
-				.andExpect(status().isForbidden())
-				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-				.andExpect(jsonPath("$.code").value("FORBIDDEN_ROLE"));
-	}
-
-	@Test
-	@DisplayName("given admin when POST admin reassign stub then 204")
-	void givenAdmin_whenAdminReassign_thenNoContent() throws Exception {
+	@DisplayName("given valid create body when POST issues then 201")
+	void givenValidBody_whenPostIssues_thenCreated() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();
 		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
-
-		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues/_admin/reassign", orgId)
-						.header("Authorization", "Bearer " + access))
-				.andExpect(status().isNoContent());
-	}
-
-	@Test
-	@DisplayName("given admin when GET issues stub then 200 empty list")
-	void givenAdmin_whenGetIssues_thenOk() throws Exception {
-		String orgId = bootstrapAndGetOrganizationId();
-		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
-
-		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
-						.header("Authorization", "Bearer " + access))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.items").isArray());
-	}
-
-	@Test
-	@DisplayName("given technician when GET issues stub then 200 empty list")
-	void givenTechnician_whenGetIssues_thenOk() throws Exception {
-		String orgId = bootstrapAndGetOrganizationId();
-		seedTechnician(orgId);
-		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
-
-		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
-						.header("Authorization", "Bearer " + access))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.items").isArray());
-	}
-
-	@Test
-	@DisplayName("given admin when POST issues then 201 with persisted issue")
-	void givenAdmin_whenPostIssues_thenCreated() throws Exception {
-		String orgId = bootstrapAndGetOrganizationId();
-		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
-
-		String body =
-				"{\"title\":\"Test issue\",\"description\":null,\"status\":\"OPEN\",\"priority\":\"MEDIUM\",\"assigneeUserId\":null,\"customerLabel\":null,\"siteLabel\":null}";
 
 		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
 						.header("Authorization", "Bearer " + access)
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(body))
+						.content(VALID_CREATE))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.id").exists())
-				.andExpect(jsonPath("$.title").value("Test issue"))
-				.andExpect(jsonPath("$.status").value("OPEN"))
-				.andExpect(jsonPath("$.priority").value("MEDIUM"));
+				.andExpect(jsonPath("$.title").value("Valid"));
 	}
 
 	@Test
-	@DisplayName("given technician when POST issues then 201")
-	void givenTechnician_whenPostIssues_thenCreated() throws Exception {
+	@DisplayName("given blank title when POST issues then 400 VALIDATION_ERROR")
+	void givenBlankTitle_whenPostIssues_thenBadRequest() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();
-		seedTechnician(orgId);
-		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
 
-		String body =
-				"{\"title\":\"Tech issue\",\"status\":\"OPEN\",\"priority\":\"LOW\"}";
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"title\":\"   \",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	@DisplayName("given invalid status enum when POST issues then 400 VALIDATION_ERROR")
+	void givenBadEnum_whenPostIssues_thenBadRequest() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"title\":\"x\",\"status\":\"NOT_A_STATUS\",\"priority\":\"MEDIUM\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	@DisplayName("given wrong org path when POST issues then 403 TENANT_ACCESS_DENIED")
+	void givenWrongOrg_whenPostIssues_thenTenantDenied() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", FOREIGN_ORG)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(VALID_CREATE))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("TENANT_ACCESS_DENIED"));
+	}
+
+	@Test
+	@DisplayName("given unknown assignee when POST issues then 404 NOT_FOUND")
+	void givenUnknownAssignee_whenPostIssues_thenNotFound() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		UUID fakeAssignee = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+
+		String body = String.format(
+				"{\"title\":\"With assignee\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\",\"assigneeUserId\":\"%s\"}",
+				fakeAssignee);
 
 		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
 						.header("Authorization", "Bearer " + access)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(body))
-				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.title").value("Tech issue"))
-				.andExpect(jsonPath("$.status").value("OPEN"));
-	}
-
-	@Test
-	@DisplayName("given valid token wrong org path when GET issues stub then 403 TENANT_ACCESS_DENIED")
-	void givenWrongOrg_whenGetIssues_thenTenantDenied() throws Exception {
-		String orgId = bootstrapAndGetOrganizationId();
-		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
-
-		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", FOREIGN_ORG)
-						.header("Authorization", "Bearer " + access))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("TENANT_ACCESS_DENIED"));
-	}
-
-	@Test
-	@DisplayName("given valid token wrong org path when POST admin reassign stub then 403 TENANT_ACCESS_DENIED")
-	void givenWrongOrg_whenAdminReassign_thenTenantDenied() throws Exception {
-		String orgId = bootstrapAndGetOrganizationId();
-		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
-
-		mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues/_admin/reassign", FOREIGN_ORG)
-						.header("Authorization", "Bearer " + access))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("TENANT_ACCESS_DENIED"));
-	}
-
-	private void seedTechnician(String organizationId) {
-		UUID orgUuid = UUID.fromString(organizationId);
-		Organization org = organizationRepository.findById(orgUuid).orElseThrow();
-		User tech = new User(org, "tech@acme.test", passwordEncoder.encode("secret12345"), UserRole.TECHNICIAN);
-		userRepository.save(tech);
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("NOT_FOUND"));
 	}
 
 	private String bootstrapAndGetOrganizationId() throws Exception {

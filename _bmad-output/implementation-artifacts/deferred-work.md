@@ -53,3 +53,7 @@ MVP acceptable per story scope.
 
 - **Unrelated artifacts in the same working tree:** `epic-2-retro-2026-03-30.md` and optional `apps/api/docker-compose.yml` are not part of Story 3.1; split commits or separate PRs for clearer history.
 - **Concurrent issue updates without optimistic locking:** Last-write-wins on overlapping edits; acceptable for MVP persistence story; add `@Version` or conflict handling when product requires it.
+
+## Deferred from: code review of 3-2-create-issue-api-mobile.md (2026-03-31)
+
+- **`IssueStubController` class name vs real POST create:** Optional rename/split per story; OpenAPI tag already says “Issues”; rename when touching controller structure next.

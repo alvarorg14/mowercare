@@ -36,6 +36,9 @@ export default function AppHomeScreen() {
         <Text variant="bodySmall" style={styles.muted}>
           API base (config): {apiBase}
         </Text>
+        <Button mode="contained" onPress={() => router.push('/issues')}>
+          Issues
+        </Button>
         <Button mode="contained" onPress={() => router.push('/settings')}>
           Settings
         </Button>
