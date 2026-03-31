@@ -28,11 +28,12 @@ This document is the **implementation-facing** matrix for API routes. Update it 
 
 ## Issue operations (Epic 3 — partial)
 
-Persistence for **`issues`** / **`issue_change_events`** exists (Story 3.1). **Create** and **list** are live (Story 3.2+); **detail** follows in a later story.
+Persistence for **`issues`** / **`issue_change_events`** exists (Story 3.1). **Create**, **list**, and **GET by id** are live.
 
 | Operation | Admin | Technician | Notes |
 |-----------|-------|------------|-------|
 | `GET /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Query **`scope`**: **`open`** (default, non-terminal statuses), **`all`** (full org), **`mine`** (assignee = caller). **MVP:** both roles see the **same** org-wide data for **`all`**; Story **3.8** may refine visibility for filters (**FR19**). Max **200** rows per response; sorted by **`updatedAt`** desc. |
+| `GET /api/v1/organizations/{organizationId}/issues/{issueId}` | Allow | Allow | **Read issue detail** (FR14); **`404`** if issue not in org |
 | `POST /api/v1/organizations/{organizationId}/issues` | Allow | Allow | **Create issue** (FR11/FR12) — persists via `IssueService` |
 | `POST /api/v1/organizations/{organizationId}/issues/_admin/reassign` | Allow | Deny | Stub admin-only action (`403` `FORBIDDEN_ROLE`) until later stories |
 

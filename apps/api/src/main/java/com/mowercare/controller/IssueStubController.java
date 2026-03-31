@@ -19,6 +19,7 @@ import com.mowercare.model.Issue;
 import com.mowercare.model.IssueListScope;
 import com.mowercare.model.request.IssueCreateRequest;
 import com.mowercare.model.response.IssueCreatedResponse;
+import com.mowercare.model.response.IssueDetailResponse;
 import com.mowercare.model.response.IssueListResponse;
 import com.mowercare.security.RoleAuthorization;
 import com.mowercare.security.TenantPathAuthorization;
@@ -37,7 +38,7 @@ import jakarta.validation.Valid;
 @Tag(
 		name = "Issues",
 		description =
-				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); POST create is live; `_admin/reassign` remains stub until later stories — see docs/rbac-matrix.md.")
+				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); GET by id returns full detail; POST create is live; `_admin/reassign` remains stub until later stories — see docs/rbac-matrix.md.")
 @SecurityRequirement(name = "bearer-jwt")
 public class IssueStubController {
 
@@ -71,6 +72,27 @@ public class IssueStubController {
 		IssueListScope scopeEnum = IssueListScope.parse(scope);
 		UUID actorUserId = UUID.fromString(jwt.getSubject());
 		return issueService.listIssues(organizationId, actorUserId, scopeEnum);
+	}
+
+	@GetMapping("/{organizationId}/issues/{issueId}")
+	@ResponseStatus(HttpStatus.OK)
+	@Operation(
+			summary = "Get issue by id",
+			description =
+					"Returns one issue in this organization. Admin and Technician allowed — see docs/rbac-matrix.md.")
+	@ApiResponse(
+			responseCode = "200",
+			description = "Issue detail",
+			content = @Content(schema = @Schema(implementation = IssueDetailResponse.class)))
+	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
+	@ApiResponse(responseCode = "403", description = "JWT organization does not match path (RFC 7807)")
+	@ApiResponse(responseCode = "404", description = "Issue not found in this organization (RFC 7807)")
+	public IssueDetailResponse getIssue(
+			@PathVariable @Schema(description = "Organization id from URL; must match JWT") UUID organizationId,
+			@PathVariable @Schema(description = "Issue id") UUID issueId,
+			@AuthenticationPrincipal Jwt jwt) {
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
+		return issueService.getIssue(organizationId, issueId);
 	}
 
 	@PostMapping(value = "/{organizationId}/issues", consumes = MediaType.APPLICATION_JSON_VALUE)

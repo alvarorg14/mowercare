@@ -69,6 +69,27 @@ export type IssueListItem = {
 
 export type IssueListResult = { items: IssueListItem[] };
 
+/** Full issue payload from GET by id (align with OpenAPI / `IssueDetailResponse`). */
+export type IssueDetail = {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  description?: string | null;
+  customerLabel?: string | null;
+  siteLabel?: string | null;
+  assigneeUserId?: string | null;
+  assigneeLabel?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function getIssue(issueId: string): Promise<IssueDetail> {
+  const orgId = getSessionOrganizationId();
+  if (!orgId) throw new Error('Missing organization id');
+  return authenticatedFetchJson(`/api/v1/organizations/${orgId}/issues/${issueId}`);
+}
+
 export function listIssues(scope: IssueListScope): Promise<IssueListResult> {
   const orgId = getSessionOrganizationId();
   if (!orgId) throw new Error('Missing organization id');

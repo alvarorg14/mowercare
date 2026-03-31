@@ -21,6 +21,7 @@ import com.mowercare.model.IssuePriority;
 import com.mowercare.model.IssueStatus;
 import com.mowercare.model.Organization;
 import com.mowercare.model.User;
+import com.mowercare.model.response.IssueDetailResponse;
 import com.mowercare.model.response.IssueListItemResponse;
 import com.mowercare.model.response.IssueListResponse;
 import com.mowercare.repository.IssueChangeEventRepository;
@@ -52,6 +53,12 @@ public class IssueService {
 		this.issueChangeEventRepository = issueChangeEventRepository;
 		this.organizationRepository = organizationRepository;
 		this.userRepository = userRepository;
+	}
+
+	@Transactional(readOnly = true)
+	public IssueDetailResponse getIssue(UUID organizationId, UUID issueId) {
+		Issue issue = loadIssue(issueId, organizationId);
+		return toDetailResponse(issue);
 	}
 
 	@Transactional(readOnly = true)
@@ -221,6 +228,22 @@ public class IssueService {
 		IssueChangeEvent event = new IssueChangeEvent(
 				issue, issue.getOrganization(), actor, Instant.now(), type, oldValue, newValue);
 		issueChangeEventRepository.save(event);
+	}
+
+	private IssueDetailResponse toDetailResponse(Issue issue) {
+		IssueListItemResponse row = toListItem(issue);
+		return new IssueDetailResponse(
+				row.id(),
+				row.title(),
+				row.status(),
+				row.priority(),
+				issue.getDescription(),
+				row.customerLabel(),
+				row.siteLabel(),
+				row.assigneeUserId(),
+				row.assigneeLabel(),
+				row.createdAt(),
+				row.updatedAt());
 	}
 
 	private IssueListItemResponse toListItem(Issue issue) {

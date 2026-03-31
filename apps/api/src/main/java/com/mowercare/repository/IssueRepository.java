@@ -14,6 +14,7 @@ import com.mowercare.model.IssueStatus;
 
 public interface IssueRepository extends JpaRepository<Issue, UUID> {
 
+	@EntityGraph(attributePaths = {"assignee"})
 	Optional<Issue> findByIdAndOrganization_Id(UUID id, UUID organizationId);
 
 	@EntityGraph(attributePaths = {"assignee"})
