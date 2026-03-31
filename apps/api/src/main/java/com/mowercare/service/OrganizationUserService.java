@@ -28,6 +28,7 @@ import com.mowercare.model.User;
 import com.mowercare.model.UserRole;
 import com.mowercare.model.request.CreateEmployeeUserRequest;
 import com.mowercare.model.request.UpdateEmployeeUserRoleRequest;
+import com.mowercare.model.response.AssignableUserResponse;
 import com.mowercare.model.response.CreateEmployeeUserResponse;
 import com.mowercare.model.response.EmployeeUserResponse;
 import com.mowercare.repository.OrganizationRepository;
@@ -70,6 +71,20 @@ public class OrganizationUserService {
 		RoleAuthorization.requireAdmin(jwt);
 		return userRepository.findByOrganization_IdOrderByEmailAsc(organizationId).stream()
 				.map(OrganizationUserService::toListResponse)
+				.toList();
+	}
+
+	/**
+	 * Active employees only, email ascending. Excludes {@link AccountStatus#PENDING_INVITE} (cannot log in yet) and
+	 * {@link AccountStatus#DEACTIVATED}. Admin and Technician may call (issue assignment).
+	 */
+	@Transactional(readOnly = true)
+	public List<AssignableUserResponse> listAssignableUsers(UUID organizationId, Jwt jwt) {
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
+		RoleAuthorization.requireEmployee(jwt);
+		return userRepository.findByOrganization_IdOrderByEmailAsc(organizationId).stream()
+				.filter(u -> u.getAccountStatus() == AccountStatus.ACTIVE)
+				.map(OrganizationUserService::toAssignableResponse)
 				.toList();
 	}
 
@@ -198,6 +213,10 @@ public class OrganizationUserService {
 	private static EmployeeUserResponse toListResponse(User user) {
 		return new EmployeeUserResponse(
 				user.getId(), user.getEmail(), user.getRole(), user.getAccountStatus(), user.getCreatedAt());
+	}
+
+	private static AssignableUserResponse toAssignableResponse(User user) {
+		return new AssignableUserResponse(user.getId(), user.getEmail(), user.getRole(), user.getAccountStatus());
 	}
 
 }

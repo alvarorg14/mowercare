@@ -110,9 +110,7 @@ public class ApiExceptionHandler {
 
 	@ExceptionHandler(ForbiddenRoleException.class)
 	public ResponseEntity<ProblemDetail> forbiddenRole(ForbiddenRoleException ex, HttpServletRequest request) {
-		ProblemDetail pd = ProblemDetail.forStatusAndDetail(
-				HttpStatus.FORBIDDEN,
-				"This action requires the " + ex.getRequiredRole().name() + " role.");
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getDetailForProblem());
 		pd.setType(TYPE_FORBIDDEN_ROLE);
 		pd.setTitle("Forbidden");
 		pd.setInstance(requestInstance(request));

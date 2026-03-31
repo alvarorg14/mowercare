@@ -58,6 +58,29 @@ class RoleAuthorizationTest {
 				.isInstanceOf(ForbiddenRoleException.class);
 	}
 
+	@Test
+	@DisplayName("given ADMIN when requireEmployee then no exception")
+	void givenAdmin_whenRequireEmployee_thenOk() {
+		RoleAuthorization.requireEmployee(jwt(UserRole.ADMIN.name()));
+	}
+
+	@Test
+	@DisplayName("given TECHNICIAN when requireEmployee then no exception")
+	void givenTechnician_whenRequireEmployee_thenOk() {
+		RoleAuthorization.requireEmployee(jwt(UserRole.TECHNICIAN.name()));
+	}
+
+	@Test
+	@DisplayName("given DISPATCHER when requireEmployee then ForbiddenRoleException with employee detail")
+	void givenDispatcher_whenRequireEmployee_thenForbidden() {
+		Jwt jwt = jwt("DISPATCHER");
+
+		assertThatThrownBy(() -> RoleAuthorization.requireEmployee(jwt))
+				.isInstanceOf(ForbiddenRoleException.class)
+				.extracting(ex -> ((ForbiddenRoleException) ex).getDetailForProblem())
+				.isEqualTo("This action requires the ADMIN or TECHNICIAN role.");
+	}
+
 	private static Jwt jwt(String role) {
 		Instant now = Instant.now();
 		var builder = Jwt.withTokenValue("unit-test-token")

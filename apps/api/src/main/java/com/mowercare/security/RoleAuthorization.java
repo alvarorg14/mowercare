@@ -18,6 +18,8 @@ import com.mowercare.model.UserRole;
  */
 public final class RoleAuthorization {
 
+	private static final String EMPLOYEE_ROLES_DETAIL = "This action requires the ADMIN or TECHNICIAN role.";
+
 	private RoleAuthorization() {}
 
 	/**
@@ -41,5 +43,24 @@ public final class RoleAuthorization {
 
 	public static void requireAdmin(Jwt jwt) {
 		requireRole(jwt, UserRole.ADMIN);
+	}
+
+	/**
+	 * Requires an organization employee: {@link UserRole#ADMIN} or {@link UserRole#TECHNICIAN} (MVP employee roles).
+	 */
+	public static void requireEmployee(Jwt jwt) {
+		String raw = jwt.getClaimAsString("role");
+		if (raw == null || raw.isBlank()) {
+			throw new InvalidAccessTokenClaimsException();
+		}
+		UserRole actual;
+		try {
+			actual = UserRole.valueOf(raw.trim());
+		} catch (IllegalArgumentException ignored) {
+			throw new ForbiddenRoleException(UserRole.ADMIN, EMPLOYEE_ROLES_DETAIL);
+		}
+		if (actual != UserRole.ADMIN && actual != UserRole.TECHNICIAN) {
+			throw new ForbiddenRoleException(UserRole.ADMIN, EMPLOYEE_ROLES_DETAIL);
+		}
 	}
 }

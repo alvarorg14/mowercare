@@ -24,6 +24,7 @@ import { ApiProblemError } from '../../../lib/http';
 import { getSubjectFromAccessToken } from '../../../lib/jwt-org';
 import { formatRelativeTimeUtc } from '../../../lib/relative-time';
 import { issueStatusTokens } from '../../../lib/theme';
+import { AssigneePicker } from '../../../components/AssigneePicker';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -120,6 +121,7 @@ export default function IssueDetailScreen() {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
   const [closeDialog, setCloseDialog] = useState(false);
+  const [assignPickerOpen, setAssignPickerOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     visible: boolean;
     message: string;
@@ -350,6 +352,9 @@ export default function IssueDetailScreen() {
                 <Button mode="contained-tonal" onPress={assignToMe}>
                   Assign to me
                 </Button>
+                <Button mode="outlined" onPress={() => setAssignPickerOpen(true)}>
+                  Choose assignee
+                </Button>
                 <Button mode="outlined" onPress={unassign}>
                   Unassign
                 </Button>
@@ -412,6 +417,14 @@ export default function IssueDetailScreen() {
           )}
         </ScrollView>
       ) : null}
+
+      <AssigneePicker
+        visible={assignPickerOpen}
+        onDismiss={() => setAssignPickerOpen(false)}
+        onSelectUserId={(userId) => {
+          if (draft) setDraft({ ...draft, assigneeUserId: userId });
+        }}
+      />
 
       <Portal>
         <Dialog visible={closeDialog} onDismiss={dismissCloseDialog}>

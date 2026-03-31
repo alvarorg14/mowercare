@@ -122,6 +122,46 @@ class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("given admin when GET assignable-users then 200 array")
+	void givenAdmin_whenGetAssignableUsers_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", orgId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].email").value("admin@acme.test"));
+	}
+
+	@Test
+	@DisplayName("given technician when GET assignable-users then 200 array")
+	void givenTechnician_whenGetAssignableUsers_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		seedTechnician(orgId);
+		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", orgId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].email").value("admin@acme.test"))
+				.andExpect(jsonPath("$[1].email").value("tech@acme.test"));
+	}
+
+	@Test
+	@DisplayName("given valid token wrong org path when GET assignable-users then 403 TENANT_ACCESS_DENIED")
+	void givenWrongOrg_whenGetAssignableUsers_thenTenantDenied() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", FOREIGN_ORG)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("TENANT_ACCESS_DENIED"));
+	}
+
+	@Test
 	@DisplayName("given technician when GET issues then 200 list")
 	void givenTechnician_whenGetIssues_thenOk() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();

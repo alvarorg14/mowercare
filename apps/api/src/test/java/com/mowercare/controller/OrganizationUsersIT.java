@@ -161,6 +161,96 @@ class OrganizationUsersIT extends AbstractPostgresIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("given admin when GET assignable-users then only active sorted by email")
+	void givenAdmin_whenGetAssignableUsers_thenActiveSorted() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", orgId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].email").value("admin@acme.test"))
+				.andExpect(jsonPath("$[0].accountStatus").value("ACTIVE"));
+	}
+
+	@Test
+	@DisplayName("given admin when invite user then GET assignable-users excludes pending invite")
+	void givenAdmin_whenInvite_thenAssignableExcludesPending() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"email\":\"invited2@acme.test\",\"role\":\"TECHNICIAN\"}"))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.accountStatus").value("PENDING_INVITE"));
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", orgId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].email").value("admin@acme.test"))
+				.andExpect(jsonPath("$[1]").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("given technician when GET assignable-users then 200 with admin and tech")
+	void givenTechnician_whenGetAssignableUsers_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		seedTechnician(orgId);
+		String access = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", orgId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].email").value("admin@acme.test"))
+				.andExpect(jsonPath("$[1].email").value("tech@acme.test"));
+	}
+
+	@Test
+	@DisplayName("given admin when deactivate tech then GET assignable-users excludes deactivated")
+	void givenAdmin_whenDeactivateTech_thenAssignableExcludesDeactivated() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(
+								"{\"email\":\"assigndeact@acme.test\",\"role\":\"TECHNICIAN\",\"initialPassword\":\"secret12345\"}"))
+				.andExpect(status().isCreated());
+
+		String techUserId = null;
+		for (JsonNode n : objectMapper.readTree(
+				mockMvc.perform(get("/api/v1/organizations/{organizationId}/users", orgId)
+								.header("Authorization", "Bearer " + adminAccess))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getResponse()
+						.getContentAsString())) {
+			if ("assigndeact@acme.test".equals(n.get("email").asText())) {
+				techUserId = n.get("id").asText();
+				break;
+			}
+		}
+		assertThat(techUserId).isNotNull();
+
+		mockMvc.perform(post("/api/v1/organizations/{organizationId}/users/{userId}/deactivate", orgId, techUserId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accountStatus").value("DEACTIVATED"));
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/assignable-users", orgId)
+						.header("Authorization", "Bearer " + adminAccess))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$[0].email").value("admin@acme.test"))
+				.andExpect(jsonPath("$[1]").doesNotExist());
+	}
+
+	@Test
 	@DisplayName("given technician when POST users then 403 FORBIDDEN_ROLE")
 	void givenTechnician_whenCreateUser_thenForbidden() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();

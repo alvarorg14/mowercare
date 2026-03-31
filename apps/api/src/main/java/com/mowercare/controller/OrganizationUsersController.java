@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mowercare.exception.ResourceNotFoundException;
 import com.mowercare.model.request.CreateEmployeeUserRequest;
 import com.mowercare.model.request.UpdateEmployeeUserRoleRequest;
+import com.mowercare.model.response.AssignableUserResponse;
 import com.mowercare.model.response.CreateEmployeeUserResponse;
 import com.mowercare.model.response.EmployeeUserResponse;
 import com.mowercare.service.OrganizationUserService;
@@ -57,6 +58,26 @@ public class OrganizationUsersController {
 	public List<EmployeeUserResponse> listUsers(
 			@PathVariable UUID organizationId, @AuthenticationPrincipal Jwt jwt) {
 		return organizationUserService.listUsers(organizationId, jwt);
+	}
+
+	@GetMapping("/{organizationId}/assignable-users")
+	@ResponseStatus(HttpStatus.OK)
+	@Operation(
+			summary = "List employees who can be assigned to issues",
+			description =
+					"Active employees only, sorted by email. Excludes PENDING_INVITE (not yet activated) and DEACTIVATED. "
+							+ "Admin and Technician may call this endpoint for issue assignment pickers.")
+	@ApiResponse(
+			responseCode = "200",
+			description = "Assignable users",
+			content = @Content(schema = @Schema(implementation = AssignableUserResponse.class)))
+	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
+	@ApiResponse(
+			responseCode = "403",
+			description = "Tenant mismatch or caller is not an organization employee (RFC 7807)")
+	public List<AssignableUserResponse> listAssignableUsers(
+			@PathVariable UUID organizationId, @AuthenticationPrincipal Jwt jwt) {
+		return organizationUserService.listAssignableUsers(organizationId, jwt);
 	}
 
 	@GetMapping("/{organizationId}/users/{userId}")

@@ -20,6 +20,7 @@ This document is the **implementation-facing** matrix for API routes. Update it 
 | `GET /api/v1/organizations/{organizationId}/profile` | Allow | Allow | Read org name |
 | `PATCH /api/v1/organizations/{organizationId}/profile` | Allow | Deny | `403` `FORBIDDEN_ROLE` |
 | `GET /api/v1/organizations/{organizationId}/users` | Allow | Deny | List employee users (email, role, account status) |
+| `GET /api/v1/organizations/{organizationId}/assignable-users` | Allow | Allow | Active employees only (email order); issue assignment picker — excludes pending invite and deactivated |
 | `GET /api/v1/organizations/{organizationId}/users/{userId}` | Allow | Deny | Get one employee user |
 | `POST /api/v1/organizations/{organizationId}/users` | Allow | Deny | Create active user or invite (`PENDING_INVITE`); `409` `USER_EMAIL_CONFLICT` on duplicate email |
 | `POST /api/v1/auth/accept-invite` | N/A | N/A | **Unauthenticated** — complete invite with token + password; not a role-gated route |
