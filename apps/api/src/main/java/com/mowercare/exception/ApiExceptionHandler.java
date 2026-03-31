@@ -227,6 +227,19 @@ public class ApiExceptionHandler {
 				.body(pd);
 	}
 
+	@ExceptionHandler(InvalidScopeException.class)
+	public ResponseEntity<ProblemDetail> invalidScope(InvalidScopeException ex, HttpServletRequest request) {
+		String detail = "Invalid scope query parameter. Use open, all, or mine.";
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+		pd.setType(TYPE_VALIDATION_ERROR);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "VALIDATION_ERROR");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ProblemDetail> validation(MethodArgumentNotValidException ex, HttpServletRequest request) {
 		String violations = String.join(

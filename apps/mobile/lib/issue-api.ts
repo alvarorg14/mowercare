@@ -50,3 +50,28 @@ export function createIssue(body: IssueCreatePayload): Promise<IssueCreated> {
     body: JSON.stringify(payload),
   });
 }
+
+/** Query `scope` values — matches API (`open` default). */
+export type IssueListScope = 'open' | 'all' | 'mine';
+
+export type IssueListItem = {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  customerLabel?: string | null;
+  siteLabel?: string | null;
+  assigneeUserId?: string | null;
+  assigneeLabel?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type IssueListResult = { items: IssueListItem[] };
+
+export function listIssues(scope: IssueListScope): Promise<IssueListResult> {
+  const orgId = getSessionOrganizationId();
+  if (!orgId) throw new Error('Missing organization id');
+  const q = new URLSearchParams({ scope });
+  return authenticatedFetchJson(`/api/v1/organizations/${orgId}/issues?${q.toString()}`);
+}

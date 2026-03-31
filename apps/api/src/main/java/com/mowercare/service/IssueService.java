@@ -2,8 +2,13 @@ package com.mowercare.service;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,10 +16,13 @@ import com.mowercare.exception.ResourceNotFoundException;
 import com.mowercare.model.Issue;
 import com.mowercare.model.IssueChangeEvent;
 import com.mowercare.model.IssueChangeType;
+import com.mowercare.model.IssueListScope;
 import com.mowercare.model.IssuePriority;
 import com.mowercare.model.IssueStatus;
 import com.mowercare.model.Organization;
 import com.mowercare.model.User;
+import com.mowercare.model.response.IssueListItemResponse;
+import com.mowercare.model.response.IssueListResponse;
 import com.mowercare.repository.IssueChangeEventRepository;
 import com.mowercare.repository.IssueRepository;
 import com.mowercare.repository.OrganizationRepository;
@@ -22,6 +30,13 @@ import com.mowercare.repository.UserRepository;
 
 @Service
 public class IssueService {
+
+	private static final int LIST_MAX = 200;
+	private static final Pageable LIST_PAGE =
+			PageRequest.of(0, LIST_MAX, Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")));
+
+	private static final Set<IssueStatus> OPEN_STATUSES =
+			Set.of(IssueStatus.OPEN, IssueStatus.IN_PROGRESS, IssueStatus.WAITING);
 
 	private final IssueRepository issueRepository;
 	private final IssueChangeEventRepository issueChangeEventRepository;
@@ -37,6 +52,17 @@ public class IssueService {
 		this.issueChangeEventRepository = issueChangeEventRepository;
 		this.organizationRepository = organizationRepository;
 		this.userRepository = userRepository;
+	}
+
+	@Transactional(readOnly = true)
+	public IssueListResponse listIssues(UUID organizationId, UUID actorUserId, IssueListScope scope) {
+		Page<Issue> page =
+				switch (scope) {
+					case OPEN -> issueRepository.findByOrganization_IdAndStatusIn(organizationId, OPEN_STATUSES, LIST_PAGE);
+					case ALL -> issueRepository.findByOrganization_Id(organizationId, LIST_PAGE);
+					case MINE -> issueRepository.findByOrganization_IdAndAssignee_Id(organizationId, actorUserId, LIST_PAGE);
+				};
+		return new IssueListResponse(page.getContent().stream().map(this::toListItem).toList());
 	}
 
 	@Transactional
@@ -195,5 +221,22 @@ public class IssueService {
 		IssueChangeEvent event = new IssueChangeEvent(
 				issue, issue.getOrganization(), actor, Instant.now(), type, oldValue, newValue);
 		issueChangeEventRepository.save(event);
+	}
+
+	private IssueListItemResponse toListItem(Issue issue) {
+		User assignee = issue.getAssignee();
+		UUID assigneeId = assignee != null ? assignee.getId() : null;
+		String assigneeLabel = assignee != null ? assignee.getEmail() : null;
+		return new IssueListItemResponse(
+				issue.getId(),
+				issue.getTitle(),
+				issue.getStatus(),
+				issue.getPriority(),
+				issue.getCustomerLabel(),
+				issue.getSiteLabel(),
+				assigneeId,
+				assigneeLabel,
+				issue.getCreatedAt(),
+				issue.getUpdatedAt());
 	}
 }

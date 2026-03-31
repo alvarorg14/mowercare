@@ -1,6 +1,5 @@
 package com.mowercare.controller;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -12,13 +11,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mowercare.model.Issue;
+import com.mowercare.model.IssueListScope;
 import com.mowercare.model.request.IssueCreateRequest;
 import com.mowercare.model.response.IssueCreatedResponse;
-import com.mowercare.model.response.IssueListStubResponse;
+import com.mowercare.model.response.IssueListResponse;
 import com.mowercare.security.RoleAuthorization;
 import com.mowercare.security.TenantPathAuthorization;
 import com.mowercare.service.IssueService;
@@ -36,7 +37,7 @@ import jakarta.validation.Valid;
 @Tag(
 		name = "Issues",
 		description =
-				"Organization-scoped issues. List remains stub until Epic 3.3; POST create is live; `_admin/reassign` remains stub until later stories — see docs/rbac-matrix.md.")
+				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); POST create is live; `_admin/reassign` remains stub until later stories — see docs/rbac-matrix.md.")
 @SecurityRequirement(name = "bearer-jwt")
 public class IssueStubController {
 
@@ -49,16 +50,27 @@ public class IssueStubController {
 	@GetMapping("/{organizationId}/issues")
 	@ResponseStatus(HttpStatus.OK)
 	@Operation(
-			summary = "List issues (stub)",
-			description = "Returns an empty list until Story 3.3. Admin and Technician allowed — see docs/rbac-matrix.md.")
-	@ApiResponse(responseCode = "200", description = "Stub list")
+			summary = "List issues",
+			description =
+					"Returns up to 200 issues for the organization, sorted by `updatedAt` desc then `id` desc. "
+							+ "Query `scope`: `open` (default, non-terminal statuses), `all`, or `mine` (assignee = caller). "
+							+ "Admin and Technician allowed — see docs/rbac-matrix.md.")
+	@ApiResponse(responseCode = "200", description = "Issue list", content = @Content(schema = @Schema(implementation = IssueListResponse.class)))
+	@ApiResponse(responseCode = "400", description = "Invalid `scope` query value (RFC 7807)")
 	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
 	@ApiResponse(responseCode = "403", description = "JWT organization does not match path (RFC 7807)")
-	public IssueListStubResponse listIssues(
+	public IssueListResponse listIssues(
 			@PathVariable @Schema(description = "Organization id from URL; must match JWT") UUID organizationId,
-			@AuthenticationPrincipal Jwt jwt) {
+			@AuthenticationPrincipal Jwt jwt,
+			@Schema(
+					description = "Queue scope: `open` (default), `all`, or `mine`",
+					allowableValues = {"open", "all", "mine"})
+					@RequestParam(required = false)
+					String scope) {
 		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
-		return new IssueListStubResponse(List.of());
+		IssueListScope scopeEnum = IssueListScope.parse(scope);
+		UUID actorUserId = UUID.fromString(jwt.getSubject());
+		return issueService.listIssues(organizationId, actorUserId, scopeEnum);
 	}
 
 	@PostMapping(value = "/{organizationId}/issues", consumes = MediaType.APPLICATION_JSON_VALUE)

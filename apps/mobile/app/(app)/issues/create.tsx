@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -51,6 +51,7 @@ function toPayload(values: IssueCreateFormValues) {
 export default function CreateIssueScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ message: string; visible: boolean }>({
@@ -74,6 +75,7 @@ export default function CreateIssueScreen() {
   const mutation = useMutation({
     mutationFn: createIssue,
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['issues'] });
       Alert.alert('Issue created', 'Your issue was saved.', [
         { text: 'OK', onPress: () => router.back() },
       ]);

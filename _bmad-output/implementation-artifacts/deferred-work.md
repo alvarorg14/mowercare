@@ -57,3 +57,9 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 3-2-create-issue-api-mobile.md (2026-03-31)
 
 - **`IssueStubController` class name vs real POST create:** Optional rename/split per story; OpenAPI tag already says “Issues”; rename when touching controller structure next.
+
+## Deferred from: code review of 3-3-issue-list-direction-a-list-filters-row.md (2026-03-31)
+
+- **`IssueStubController` naming debt:** GET list is live; rename/split controller when structure is next refactored (same as 3.2 note).
+- **Probe query payload for empty-state detection:** Secondary `scope=all` query may return up to 200 rows only to infer “org has issues elsewhere”; story mentioned `limit=1` as an example — acceptable MVP; add `limit` query param or a tiny count endpoint if profiling warrants it.
+- **List sort index:** Optional composite index on `(organization_id, updated_at desc)` per AC5; not added in this story; revisit under load.
