@@ -12,7 +12,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mowercare.exception.IssueClosedException;
 import com.mowercare.exception.ResourceNotFoundException;
+import com.mowercare.issue.IssueStatusTransitionValidator;
+import com.mowercare.model.request.IssuePatch;
 import com.mowercare.model.Issue;
 import com.mowercare.model.IssueChangeEvent;
 import com.mowercare.model.IssueChangeType;
@@ -100,8 +103,51 @@ public class IssueService {
 	}
 
 	@Transactional
+	public IssueDetailResponse patchIssue(UUID organizationId, UUID issueId, UUID actorUserId, IssuePatch patch) {
+		Issue issue = loadIssue(issueId, organizationId);
+		if (issue.getStatus() == IssueStatus.CLOSED) {
+			if (patch.statusPresent() && patch.status() != issue.getStatus()) {
+				IssueStatusTransitionValidator.validate(issue.getStatus(), patch.status());
+			}
+			if (patch.wouldChange(issue)) {
+				throw new IssueClosedException();
+			}
+			return toDetailResponse(issue);
+		}
+		if (patch.titlePresent()) {
+			updateTitle(issueId, organizationId, actorUserId, patch.title());
+		}
+		if (patch.descriptionPresent()) {
+			String d = patch.description();
+			String normalized = d == null || d.isBlank() ? null : d.trim();
+			updateDescription(issueId, organizationId, actorUserId, normalized);
+		}
+		if (patch.priorityPresent()) {
+			updatePriority(issueId, organizationId, actorUserId, patch.priority());
+		}
+		if (patch.assigneeUserIdPresent()) {
+			updateAssignee(issueId, organizationId, actorUserId, patch.assigneeUserId());
+		}
+		if (patch.customerLabelPresent()) {
+			String c = patch.customerLabel();
+			String normalized = c == null || c.isBlank() ? null : c.trim();
+			updateCustomerLabel(issueId, organizationId, actorUserId, normalized);
+		}
+		if (patch.siteLabelPresent()) {
+			String s = patch.siteLabel();
+			String normalized = s == null || s.isBlank() ? null : s.trim();
+			updateSiteLabel(issueId, organizationId, actorUserId, normalized);
+		}
+		if (patch.statusPresent()) {
+			updateStatus(issueId, organizationId, actorUserId, patch.status());
+		}
+		return getIssue(organizationId, issueId);
+	}
+
+	@Transactional
 	public Issue updateStatus(UUID issueId, UUID organizationId, UUID actorUserId, IssueStatus newStatus) {
 		Issue issue = loadIssue(issueId, organizationId);
+		IssueStatusTransitionValidator.validate(issue.getStatus(), newStatus);
 		User actor = loadActor(organizationId, actorUserId);
 		IssueStatus old = issue.getStatus();
 		if (old == newStatus) {

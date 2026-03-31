@@ -2,6 +2,7 @@ package com.mowercare.controller;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -225,6 +226,52 @@ class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
 						.header("Authorization", "Bearer " + techAccess))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.title").value("Tech can read"));
+	}
+
+	@Test
+	@DisplayName("given technician when PATCH issue then 200")
+	void givenTechnician_whenPatchIssue_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		seedTechnician(orgId);
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String techAccess = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+		String body = "{\"title\":\"Patch me\",\"status\":\"OPEN\",\"priority\":\"LOW\"}";
+		MvcResult created = mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String issueId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/issues/{issueId}", orgId, issueId)
+						.header("Authorization", "Bearer " + techAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"title\":\"Patched by tech\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.title").value("Patched by tech"));
+	}
+
+	@Test
+	@DisplayName("given admin when PATCH issue then 200")
+	void givenAdmin_whenPatchIssue_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String body = "{\"title\":\"Admin patch\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}";
+		MvcResult created = mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String issueId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
+
+		mockMvc.perform(patch("/api/v1/organizations/{organizationId}/issues/{issueId}", orgId, issueId)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"priority\":\"HIGH\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.priority").value("HIGH"));
 	}
 
 	@Test

@@ -36,6 +36,8 @@ public class ApiExceptionHandler {
 	private static final URI TYPE_INVITE_TOKEN_INVALID = URI.create("urn:mowercare:problem:INVITE_TOKEN_INVALID");
 	private static final URI TYPE_NOT_FOUND = URI.create("urn:mowercare:problem:NOT_FOUND");
 	private static final URI TYPE_LAST_ADMIN_REMOVAL = URI.create("urn:mowercare:problem:LAST_ADMIN_REMOVAL");
+	private static final URI TYPE_INVALID_STATUS_TRANSITION = URI.create("urn:mowercare:problem:INVALID_STATUS_TRANSITION");
+	private static final URI TYPE_ISSUE_CLOSED = URI.create("urn:mowercare:problem:ISSUE_CLOSED");
 
 	@ExceptionHandler(ResourceNotFoundException.class)
 	public ResponseEntity<ProblemDetail> resourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
@@ -235,6 +237,55 @@ public class ApiExceptionHandler {
 		pd.setTitle("Bad Request");
 		pd.setInstance(requestInstance(request));
 		pd.setProperty("code", "VALIDATION_ERROR");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(EmptyIssuePatchException.class)
+	public ResponseEntity<ProblemDetail> emptyIssuePatch(EmptyIssuePatchException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+		pd.setType(TYPE_VALIDATION_ERROR);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "VALIDATION_ERROR");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(InvalidIssuePatchException.class)
+	public ResponseEntity<ProblemDetail> invalidIssuePatch(InvalidIssuePatchException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+		pd.setType(TYPE_VALIDATION_ERROR);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "VALIDATION_ERROR");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(InvalidStatusTransitionException.class)
+	public ResponseEntity<ProblemDetail> invalidStatusTransition(
+			InvalidStatusTransitionException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+		pd.setType(TYPE_INVALID_STATUS_TRANSITION);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "INVALID_STATUS_TRANSITION");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
+	@ExceptionHandler(IssueClosedException.class)
+	public ResponseEntity<ProblemDetail> issueClosed(IssueClosedException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+		pd.setType(TYPE_ISSUE_CLOSED);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "ISSUE_CLOSED");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.contentType(MediaType.parseMediaType("application/problem+json"))
 				.body(pd);

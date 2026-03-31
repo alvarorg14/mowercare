@@ -90,6 +90,26 @@ export function getIssue(issueId: string): Promise<IssueDetail> {
   return authenticatedFetchJson(`/api/v1/organizations/${orgId}/issues/${issueId}`);
 }
 
+/** Partial update — only include fields that change (camelCase, matches API). */
+export type IssueUpdatePayload = {
+  title?: string;
+  description?: string | null;
+  status?: string;
+  priority?: string;
+  assigneeUserId?: string | null;
+  customerLabel?: string | null;
+  siteLabel?: string | null;
+};
+
+export function patchIssue(issueId: string, body: IssueUpdatePayload): Promise<IssueDetail> {
+  const orgId = getSessionOrganizationId();
+  if (!orgId) throw new Error('Missing organization id');
+  return authenticatedFetchJson(`/api/v1/organizations/${orgId}/issues/${issueId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
 export function listIssues(scope: IssueListScope): Promise<IssueListResult> {
   const orgId = getSessionOrganizationId();
   if (!orgId) throw new Error('Missing organization id');

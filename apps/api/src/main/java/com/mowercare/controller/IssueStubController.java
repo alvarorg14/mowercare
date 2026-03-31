@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,9 +16,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mowercare.model.Issue;
 import com.mowercare.model.IssueListScope;
+import com.mowercare.exception.InvalidIssuePatchException;
 import com.mowercare.model.request.IssueCreateRequest;
+import com.mowercare.model.request.IssuePatch;
+import com.mowercare.model.request.IssueUpdateRequest;
 import com.mowercare.model.response.IssueCreatedResponse;
 import com.mowercare.model.response.IssueDetailResponse;
 import com.mowercare.model.response.IssueListResponse;
@@ -38,14 +45,16 @@ import jakarta.validation.Valid;
 @Tag(
 		name = "Issues",
 		description =
-				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); GET by id returns full detail; POST create is live; `_admin/reassign` remains stub until later stories — see docs/rbac-matrix.md.")
+				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); GET by id returns full detail; POST create; PATCH partial update; `_admin/reassign` remains stub — see docs/rbac-matrix.md.")
 @SecurityRequirement(name = "bearer-jwt")
 public class IssueStubController {
 
 	private final IssueService issueService;
+	private final ObjectMapper objectMapper;
 
-	public IssueStubController(IssueService issueService) {
+	public IssueStubController(IssueService issueService, ObjectMapper objectMapper) {
 		this.issueService = issueService;
+		this.objectMapper = objectMapper;
 	}
 
 	@GetMapping("/{organizationId}/issues")
@@ -72,6 +81,42 @@ public class IssueStubController {
 		IssueListScope scopeEnum = IssueListScope.parse(scope);
 		UUID actorUserId = UUID.fromString(jwt.getSubject());
 		return issueService.listIssues(organizationId, actorUserId, scopeEnum);
+	}
+
+	@PatchMapping(value = "/{organizationId}/issues/{issueId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(HttpStatus.OK)
+	@Operation(
+			summary = "Patch issue",
+			description =
+					"Partial update (camelCase). Optional fields: `title`, `description`, `status`, `priority`, `assigneeUserId` (null to unassign), `customerLabel`, `siteLabel`. "
+							+ "Admin and Technician allowed — see docs/rbac-matrix.md.",
+			requestBody =
+					@io.swagger.v3.oas.annotations.parameters.RequestBody(
+							required = true,
+							content = @Content(schema = @Schema(implementation = IssueUpdateRequest.class))))
+	@ApiResponse(
+			responseCode = "200",
+			description = "Updated issue",
+			content = @Content(schema = @Schema(implementation = IssueDetailResponse.class)))
+	@ApiResponse(responseCode = "400", description = "Validation, closed issue, or invalid transition (RFC 7807)")
+	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
+	@ApiResponse(responseCode = "403", description = "JWT organization does not match path (RFC 7807)")
+	@ApiResponse(responseCode = "404", description = "Issue or assignee not found (RFC 7807)")
+	public IssueDetailResponse patchIssue(
+			@PathVariable @Schema(description = "Organization id from URL; must match JWT") UUID organizationId,
+			@PathVariable @Schema(description = "Issue id") UUID issueId,
+			@AuthenticationPrincipal Jwt jwt,
+			@RequestBody String body) {
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
+		JsonNode json;
+		try {
+			json = objectMapper.readTree(body);
+		} catch (JsonProcessingException e) {
+			throw new InvalidIssuePatchException("Invalid JSON");
+		}
+		IssuePatch patch = IssuePatch.from(json);
+		UUID actorUserId = UUID.fromString(jwt.getSubject());
+		return issueService.patchIssue(organizationId, issueId, actorUserId, patch);
 	}
 
 	@GetMapping("/{organizationId}/issues/{issueId}")
