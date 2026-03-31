@@ -48,3 +48,8 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 2-5-admin-settings-ui-invites-roles-deactivate.md (2026-03-30)
 
 - **No automated mobile tests for Settings/Team routes:** Story allows a manual checklist; add Maestro/E2E or integration tests when the repo adopts a runner pattern for RN.
+
+## Deferred from: code review of 3-1-issue-aggregate-schema-and-change-history-storage.md (2026-03-31)
+
+- **Unrelated artifacts in the same working tree:** `epic-2-retro-2026-03-30.md` and optional `apps/api/docker-compose.yml` are not part of Story 3.1; split commits or separate PRs for clearer history.
+- **Concurrent issue updates without optimistic locking:** Last-write-wins on overlapping edits; acceptable for MVP persistence story; add `@Version` or conflict handling when product requires it.

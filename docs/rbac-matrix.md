@@ -28,6 +28,8 @@ This document is the **implementation-facing** matrix for API routes. Update it 
 
 ## Issue operations (stubs until Epic 3)
 
+Persistence for **`issues`** / **`issue_change_events`** exists (Story 3.1); HTTP routes below still return **stubs** until Story 3.2 wires real create/list/detail.
+
 | Operation | Admin | Technician | Notes |
 |-----------|-------|------------|-------|
 | `GET /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Stub list — Epic 3 replaces with real data |

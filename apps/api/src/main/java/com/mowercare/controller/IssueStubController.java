@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+// TODO Story 3.2: replace stub responses with IssueService + OpenAPI; keep tenant + RBAC checks.
 @RestController
 @RequestMapping("/api/v1/organizations")
 @Tag(

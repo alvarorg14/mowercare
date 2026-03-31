@@ -1,0 +1,173 @@
+# FK policies: issues.organization_id RESTRICT (tenant root); issues.assignee_user_id SET NULL on user delete;
+# issue_change_events.issue_id CASCADE on issue delete (history removed with issue); actor_user_id RESTRICT.
+databaseChangeLog:
+  - changeSet:
+      id: "0008-issues-and-history"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - createTable:
+            tableName: issues
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assignee_user_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: customer_label
+                  type: varchar(500)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: site_label
+                  type: varchar(500)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_issues_organization
+            baseTableName: issues
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_issues_assignee_user
+            baseTableName: issues
+            baseColumnNames: assignee_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            indexName: idx_issues_organization_id
+            tableName: issues
+            columns:
+              - column:
+                  name: organization_id
+        - createIndex:
+            indexName: idx_issues_organization_id_status
+            tableName: issues
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: status
+        - createTable:
+            tableName: issue_change_events
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: issue_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: change_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: old_value
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: new_value
+                  type: text
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            constraintName: fk_issue_change_events_issue
+            baseTableName: issue_change_events
+            baseColumnNames: issue_id
+            referencedTableName: issues
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_issue_change_events_organization
+            baseTableName: issue_change_events
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_issue_change_events_actor_user
+            baseTableName: issue_change_events
+            baseColumnNames: actor_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - createIndex:
+            indexName: idx_issue_change_events_issue_occurred
+            tableName: issue_change_events
+            columns:
+              - column:
+                  name: issue_id
+              - column:
+                  name: occurred_at
+      rollback:
+        - dropTable:
+            tableName: issue_change_events
+        - dropTable:
+            tableName: issues

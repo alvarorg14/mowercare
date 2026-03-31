@@ -1,0 +1,199 @@
+package com.mowercare.service;
+
+import java.time.Instant;
+import java.util.Objects;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.mowercare.exception.ResourceNotFoundException;
+import com.mowercare.model.Issue;
+import com.mowercare.model.IssueChangeEvent;
+import com.mowercare.model.IssueChangeType;
+import com.mowercare.model.IssuePriority;
+import com.mowercare.model.IssueStatus;
+import com.mowercare.model.Organization;
+import com.mowercare.model.User;
+import com.mowercare.repository.IssueChangeEventRepository;
+import com.mowercare.repository.IssueRepository;
+import com.mowercare.repository.OrganizationRepository;
+import com.mowercare.repository.UserRepository;
+
+@Service
+public class IssueService {
+
+	private final IssueRepository issueRepository;
+	private final IssueChangeEventRepository issueChangeEventRepository;
+	private final OrganizationRepository organizationRepository;
+	private final UserRepository userRepository;
+
+	public IssueService(
+			IssueRepository issueRepository,
+			IssueChangeEventRepository issueChangeEventRepository,
+			OrganizationRepository organizationRepository,
+			UserRepository userRepository) {
+		this.issueRepository = issueRepository;
+		this.issueChangeEventRepository = issueChangeEventRepository;
+		this.organizationRepository = organizationRepository;
+		this.userRepository = userRepository;
+	}
+
+	@Transactional
+	public Issue createIssue(
+			UUID organizationId,
+			UUID actorUserId,
+			String title,
+			String description,
+			IssueStatus status,
+			IssuePriority priority,
+			UUID assigneeUserId,
+			String customerLabel,
+			String siteLabel) {
+		Objects.requireNonNull(title, "title");
+		Objects.requireNonNull(status, "status");
+		Objects.requireNonNull(priority, "priority");
+		Organization organization =
+				organizationRepository.findById(organizationId).orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
+		User actor = userRepository
+				.findByOrganization_IdAndId(organizationId, actorUserId)
+				.orElseThrow(() -> new ResourceNotFoundException("Actor not found"));
+		User assignee = resolveAssigneeOrNull(organizationId, assigneeUserId);
+
+		Issue issue = new Issue(organization, title, description, status, priority, assignee, customerLabel, siteLabel);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.CREATED, null, saved.getTitle());
+		return saved;
+	}
+
+	@Transactional
+	public Issue updateStatus(UUID issueId, UUID organizationId, UUID actorUserId, IssueStatus newStatus) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		IssueStatus old = issue.getStatus();
+		if (old == newStatus) {
+			return issue;
+		}
+		issue.setStatus(newStatus);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.STATUS_CHANGED, old.name(), newStatus.name());
+		return saved;
+	}
+
+	@Transactional
+	public Issue updateAssignee(UUID issueId, UUID organizationId, UUID actorUserId, UUID newAssigneeUserId) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		UUID oldId = issue.getAssignee() != null ? issue.getAssignee().getId() : null;
+		User newAssignee = resolveAssigneeOrNull(organizationId, newAssigneeUserId);
+		if (Objects.equals(oldId, newAssigneeUserId)) {
+			return issue;
+		}
+		issue.setAssignee(newAssignee);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(
+				saved,
+				actor,
+				IssueChangeType.ASSIGNEE_CHANGED,
+				oldId == null ? null : oldId.toString(),
+				newAssigneeUserId == null ? null : newAssigneeUserId.toString());
+		return saved;
+	}
+
+	@Transactional
+	public Issue updatePriority(UUID issueId, UUID organizationId, UUID actorUserId, IssuePriority newPriority) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		IssuePriority old = issue.getPriority();
+		if (old == newPriority) {
+			return issue;
+		}
+		issue.setPriority(newPriority);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.PRIORITY_CHANGED, old.name(), newPriority.name());
+		return saved;
+	}
+
+	@Transactional
+	public Issue updateTitle(UUID issueId, UUID organizationId, UUID actorUserId, String newTitle) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		String old = issue.getTitle();
+		if (Objects.equals(old, newTitle)) {
+			return issue;
+		}
+		issue.setTitle(newTitle);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.TITLE_CHANGED, old, newTitle);
+		return saved;
+	}
+
+	@Transactional
+	public Issue updateDescription(UUID issueId, UUID organizationId, UUID actorUserId, String newDescription) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		String old = issue.getDescription();
+		if (Objects.equals(old, newDescription)) {
+			return issue;
+		}
+		issue.setDescription(newDescription);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.DESCRIPTION_CHANGED, old, newDescription);
+		return saved;
+	}
+
+	@Transactional
+	public Issue updateCustomerLabel(UUID issueId, UUID organizationId, UUID actorUserId, String newLabel) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		String old = issue.getCustomerLabel();
+		if (Objects.equals(old, newLabel)) {
+			return issue;
+		}
+		issue.setCustomerLabel(newLabel);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.CUSTOMER_LABEL_CHANGED, old, newLabel);
+		return saved;
+	}
+
+	@Transactional
+	public Issue updateSiteLabel(UUID issueId, UUID organizationId, UUID actorUserId, String newLabel) {
+		Issue issue = loadIssue(issueId, organizationId);
+		User actor = loadActor(organizationId, actorUserId);
+		String old = issue.getSiteLabel();
+		if (Objects.equals(old, newLabel)) {
+			return issue;
+		}
+		issue.setSiteLabel(newLabel);
+		Issue saved = issueRepository.save(issue);
+		appendEvent(saved, actor, IssueChangeType.SITE_LABEL_CHANGED, old, newLabel);
+		return saved;
+	}
+
+	private Issue loadIssue(UUID issueId, UUID organizationId) {
+		return issueRepository
+				.findByIdAndOrganization_Id(issueId, organizationId)
+				.orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+	}
+
+	private User loadActor(UUID organizationId, UUID actorUserId) {
+		return userRepository
+				.findByOrganization_IdAndId(organizationId, actorUserId)
+				.orElseThrow(() -> new ResourceNotFoundException("Actor not found"));
+	}
+
+	private User resolveAssigneeOrNull(UUID organizationId, UUID assigneeUserId) {
+		if (assigneeUserId == null) {
+			return null;
+		}
+		return userRepository
+				.findByOrganization_IdAndId(organizationId, assigneeUserId)
+				.orElseThrow(() -> new ResourceNotFoundException("Assignee not found"));
+	}
+
+	private void appendEvent(Issue issue, User actor, IssueChangeType type, String oldValue, String newValue) {
+		IssueChangeEvent event = new IssueChangeEvent(
+				issue, issue.getOrganization(), actor, Instant.now(), type, oldValue, newValue);
+		issueChangeEventRepository.save(event);
+	}
+}
