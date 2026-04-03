@@ -227,6 +227,18 @@ public class ApiExceptionHandler {
 				.body(pd);
 	}
 
+	@ExceptionHandler(InvalidIssueListQueryException.class)
+	public ResponseEntity<ProblemDetail> invalidIssueListQuery(InvalidIssueListQueryException ex, HttpServletRequest request) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+		pd.setType(TYPE_VALIDATION_ERROR);
+		pd.setTitle("Bad Request");
+		pd.setInstance(requestInstance(request));
+		pd.setProperty("code", "VALIDATION_ERROR");
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.contentType(MediaType.parseMediaType("application/problem+json"))
+				.body(pd);
+	}
+
 	@ExceptionHandler(InvalidScopeException.class)
 	public ResponseEntity<ProblemDetail> invalidScope(InvalidScopeException ex, HttpServletRequest request) {
 		String detail = "Invalid scope query parameter. Use open, all, or mine.";

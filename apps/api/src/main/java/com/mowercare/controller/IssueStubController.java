@@ -1,5 +1,6 @@
 package com.mowercare.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mowercare.issue.IssueListQueryParser;
 import com.mowercare.model.Issue;
 import com.mowercare.model.IssueListScope;
 import com.mowercare.exception.InvalidIssuePatchException;
@@ -48,7 +50,7 @@ import jakarta.validation.Valid;
 @Tag(
 		name = "Issues",
 		description =
-				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); GET by id returns full detail; GET `.../issues/{issueId}/change-events` returns paginated history; POST create; PATCH partial update; `_admin/reassign` remains stub — see docs/rbac-matrix.md.")
+				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`), optional repeated `status`/`priority` filters, `sort`/`direction`; GET by id returns full detail; GET `.../issues/{issueId}/change-events` returns paginated history; POST create; PATCH partial update; `_admin/reassign` remains stub — see docs/rbac-matrix.md.")
 @SecurityRequirement(name = "bearer-jwt")
 public class IssueStubController {
 
@@ -65,11 +67,15 @@ public class IssueStubController {
 	@Operation(
 			summary = "List issues",
 			description =
-					"Returns up to 200 issues for the organization, sorted by `updatedAt` desc then `id` desc. "
+					"Returns up to 200 issues for the organization. Default sort: `updatedAt` desc, `id` desc. "
 							+ "Query `scope`: `open` (default, non-terminal statuses), `all`, or `mine` (assignee = caller). "
+							+ "Optional repeated `status` and `priority` params (status: OPEN, IN_PROGRESS, …; priority: LOW, URGENT, …) intersect with `scope`. "
+							+ "Optional `sort`: `updatedAt` (default), `createdAt`, or `priority` (severity order). Optional `direction`: `asc` or `desc` (default `desc`). "
 							+ "Admin and Technician allowed — see docs/rbac-matrix.md.")
 	@ApiResponse(responseCode = "200", description = "Issue list", content = @Content(schema = @Schema(implementation = IssueListResponse.class)))
-	@ApiResponse(responseCode = "400", description = "Invalid `scope` query value (RFC 7807)")
+	@ApiResponse(
+			responseCode = "400",
+			description = "Invalid `scope`, `status`, `priority`, `sort`, or `direction` query value (RFC 7807)")
 	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
 	@ApiResponse(responseCode = "403", description = "JWT organization does not match path (RFC 7807)")
 	public IssueListResponse listIssues(
@@ -79,11 +85,26 @@ public class IssueStubController {
 					description = "Queue scope: `open` (default), `all`, or `mine`",
 					allowableValues = {"open", "all", "mine"})
 					@RequestParam(required = false)
-					String scope) {
+					String scope,
+			@Schema(description = "Repeat to filter by status (e.g. OPEN, IN_PROGRESS). Intersects with `scope`.")
+					@RequestParam(required = false)
+					List<String> status,
+			@Schema(description = "Repeat to filter by priority (e.g. LOW, URGENT).")
+					@RequestParam(required = false)
+					List<String> priority,
+			@Schema(
+					description = "Sort field",
+					allowableValues = {"updatedAt", "createdAt", "priority"})
+					@RequestParam(required = false)
+					String sort,
+			@Schema(description = "Sort direction", allowableValues = {"asc", "desc"})
+					@RequestParam(required = false)
+					String direction) {
 		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
 		IssueListScope scopeEnum = IssueListScope.parse(scope);
 		UUID actorUserId = UUID.fromString(jwt.getSubject());
-		return issueService.listIssues(organizationId, actorUserId, scopeEnum);
+		var filters = IssueListQueryParser.parse(status, priority, sort, direction);
+		return issueService.listIssues(organizationId, actorUserId, scopeEnum, filters);
 	}
 
 	@PatchMapping(value = "/{organizationId}/issues/{issueId}", consumes = MediaType.APPLICATION_JSON_VALUE)

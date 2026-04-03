@@ -54,6 +54,43 @@ export function createIssue(body: IssueCreatePayload): Promise<IssueCreated> {
 /** Query `scope` values — matches API (`open` default). */
 export type IssueListScope = 'open' | 'all' | 'mine';
 
+/** Matches GET `/issues` query (`sort` / `direction`). */
+export type IssueListSortField = 'updatedAt' | 'createdAt' | 'priority';
+
+export type IssueListParams = {
+  scope: IssueListScope;
+  /** Enum names: OPEN, IN_PROGRESS, … — repeated `status` query params. */
+  statuses: string[];
+  /** Enum names: LOW, MEDIUM, … */
+  priorities: string[];
+  sort: IssueListSortField;
+  direction: 'asc' | 'desc';
+};
+
+export function defaultIssueListParams(scope: IssueListScope = 'open'): IssueListParams {
+  return {
+    scope,
+    statuses: [],
+    priorities: [],
+    sort: 'updatedAt',
+    direction: 'desc',
+  };
+}
+
+export function buildIssueListQueryString(params: IssueListParams): string {
+  const q = new URLSearchParams();
+  q.set('scope', params.scope);
+  for (const s of params.statuses) {
+    q.append('status', s);
+  }
+  for (const p of params.priorities) {
+    q.append('priority', p);
+  }
+  q.set('sort', params.sort);
+  q.set('direction', params.direction);
+  return q.toString();
+}
+
 export type IssueListItem = {
   id: string;
   title: string;
@@ -110,11 +147,12 @@ export function patchIssue(issueId: string, body: IssueUpdatePayload): Promise<I
   });
 }
 
-export function listIssues(scope: IssueListScope): Promise<IssueListResult> {
+export function listIssues(params: IssueListParams): Promise<IssueListResult> {
   const orgId = getSessionOrganizationId();
   if (!orgId) throw new Error('Missing organization id');
-  const q = new URLSearchParams({ scope });
-  return authenticatedFetchJson(`/api/v1/organizations/${orgId}/issues?${q.toString()}`);
+  return authenticatedFetchJson(
+    `/api/v1/organizations/${orgId}/issues?${buildIssueListQueryString(params)}`,
+  );
 }
 
 /** Align with `IssueChangeEventItemResponse` / `IssueChangeEventsResponse`. */

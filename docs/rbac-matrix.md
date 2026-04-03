@@ -33,7 +33,7 @@ Persistence for **`issues`** / **`issue_change_events`** exists (Story 3.1). **C
 
 | Operation | Admin | Technician | Notes |
 |-----------|-------|------------|-------|
-| `GET /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Query **`scope`**: **`open`** (default, non-terminal statuses), **`all`** (full org), **`mine`** (assignee = caller). **MVP:** both roles see the **same** org-wide data for **`all`**; Story **3.8** may refine visibility for filters (**FR19**). Max **200** rows per response; sorted by **`updatedAt`** desc. |
+| `GET /api/v1/organizations/{organizationId}/issues` | Allow | Allow | Query **`scope`**: **`open`** (default), **`all`**, **`mine`**. Optional repeated **`status`** / **`priority`** (enum names); optional **`sort`** (`updatedAt`, `createdAt`, `priority`) and **`direction`** (`asc`/`desc`). **MVP:** Admin and Technician share the **same** org-scoped list rules; filters do not change role visibility. Max **200** rows; default sort **`updatedAt`** desc, **`id`** desc tie-break. |
 | `GET /api/v1/organizations/{organizationId}/issues/{issueId}` | Allow | Allow | **Read issue detail** (FR14); **`404`** if issue not in org |
 | `GET /api/v1/organizations/{organizationId}/issues/{issueId}/change-events` | Allow | Allow | **Issue activity / history** (FR18); paginated `occurredAt` asc; **`404`** if issue not in org |
 | `POST /api/v1/organizations/{organizationId}/issues` | Allow | Allow | **Create issue** (FR11/FR12) — persists via `IssueService` |

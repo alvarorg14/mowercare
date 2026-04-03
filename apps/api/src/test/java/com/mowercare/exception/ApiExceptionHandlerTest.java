@@ -169,4 +169,19 @@ class ApiExceptionHandlerTest {
 				.contains("adminPassword")
 				.contains("size must be between 8 and 128");
 	}
+
+	@Test
+	@DisplayName("given InvalidIssueListQueryException when handle then returns 400 VALIDATION_ERROR")
+	void givenInvalidIssueListQuery_whenHandle_thenBadRequestProblem() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setRequestURI("/api/v1/organizations/00000000-0000-0000-0000-000000000001/issues");
+
+		ResponseEntity<ProblemDetail> response =
+				handler.invalidIssueListQuery(new InvalidIssueListQueryException("Invalid sort: x"), request);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().getProperties().get("code")).isEqualTo("VALIDATION_ERROR");
+		assertThat(response.getBody().getType()).isEqualTo(EXPECTED_TYPE_VALIDATION);
+		assertThat(response.getBody().getDetail()).contains("Invalid sort");
+	}
 }

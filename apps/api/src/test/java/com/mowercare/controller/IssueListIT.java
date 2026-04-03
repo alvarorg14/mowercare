@@ -181,6 +181,116 @@ class IssueListIT extends AbstractPostgresIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("given invalid sort when GET issues then 400 VALIDATION_ERROR")
+	void givenBadSort_whenGetIssues_thenBadRequest() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("sort", "notAField")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	@DisplayName("given invalid status filter when GET issues then 400 VALIDATION_ERROR")
+	void givenBadStatusFilter_whenGetIssues_thenBadRequest() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("status", "BROKEN")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	@DisplayName("given invalid priority filter when GET issues then 400 VALIDATION_ERROR")
+	void givenBadPriorityFilter_whenGetIssues_thenBadRequest() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("priority", "NOT_A_PRIORITY")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	@DisplayName("given invalid direction when GET issues then 400 VALIDATION_ERROR")
+	void givenBadDirection_whenGetIssues_thenBadRequest() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("direction", "sideways")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	@DisplayName("given issues when GET status=OPEN then only open rows")
+	void givenSeededIssues_whenFilterStatusOpen_thenOnlyOpen() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		postIssue(orgId, access, "{\"title\":\"O1\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}");
+		postIssue(orgId, access, "{\"title\":\"R1\",\"status\":\"RESOLVED\",\"priority\":\"LOW\"}");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("scope", "all")
+						.param("status", "OPEN")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].title").value("O1"));
+	}
+
+	@Test
+	@DisplayName("given issues when GET sort=priority&direction=desc then URGENT before LOW")
+	void givenMixedPriorities_whenSortPriorityDesc_thenUrgentFirst() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		postIssue(orgId, access, "{\"title\":\"Low\",\"status\":\"OPEN\",\"priority\":\"LOW\"}");
+		postIssue(orgId, access, "{\"title\":\"Urgent\",\"status\":\"OPEN\",\"priority\":\"URGENT\"}");
+		postIssue(orgId, access, "{\"title\":\"Med\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("scope", "all")
+						.param("sort", "priority")
+						.param("direction", "desc")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].title").value("Urgent"))
+				.andExpect(jsonPath("$.items[1].title").value("Med"))
+				.andExpect(jsonPath("$.items[2].title").value("Low"));
+	}
+
+	@Test
+	@DisplayName("given issues when GET sort=createdAt&direction=asc then creation order")
+	void givenIssues_whenSortCreatedAtAsc_thenOldestFirst() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		postIssue(orgId, access, "{\"title\":\"First\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}");
+		postIssue(orgId, access, "{\"title\":\"Second\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}");
+
+		mockMvc.perform(get("/api/v1/organizations/{organizationId}/issues", orgId)
+						.param("scope", "all")
+						.param("sort", "createdAt")
+						.param("direction", "asc")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].title").value("First"))
+				.andExpect(jsonPath("$.items[1].title").value("Second"));
+	}
+
+	@Test
 	@DisplayName("given list item when GET then includes assigneeLabel and timestamps")
 	void givenIssueWithAssignee_whenGetList_thenShape() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();

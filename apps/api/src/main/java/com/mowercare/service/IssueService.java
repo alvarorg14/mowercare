@@ -9,12 +9,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mowercare.exception.IssueClosedException;
 import com.mowercare.exception.ResourceNotFoundException;
 import com.mowercare.issue.IssueStatusTransitionValidator;
+import com.mowercare.issue.IssueListQueryParser.IssueListFilters;
+import com.mowercare.issue.IssueSorts;
+import com.mowercare.issue.IssueSpecifications;
 import com.mowercare.model.request.IssuePatch;
 import com.mowercare.model.Issue;
 import com.mowercare.model.IssueChangeEvent;
@@ -39,9 +43,6 @@ public class IssueService {
 
 	private static final int LIST_MAX = 200;
 	private static final int CHANGE_EVENTS_MAX_PAGE = 100;
-
-	private static final Pageable LIST_PAGE =
-			PageRequest.of(0, LIST_MAX, Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")));
 
 	private static final Set<IssueStatus> OPEN_STATUSES =
 			Set.of(IssueStatus.OPEN, IssueStatus.IN_PROGRESS, IssueStatus.WAITING);
@@ -90,13 +91,18 @@ public class IssueService {
 	}
 
 	@Transactional(readOnly = true)
-	public IssueListResponse listIssues(UUID organizationId, UUID actorUserId, IssueListScope scope) {
-		Page<Issue> page =
-				switch (scope) {
-					case OPEN -> issueRepository.findByOrganization_IdAndStatusIn(organizationId, OPEN_STATUSES, LIST_PAGE);
-					case ALL -> issueRepository.findByOrganization_Id(organizationId, LIST_PAGE);
-					case MINE -> issueRepository.findByOrganization_IdAndAssignee_Id(organizationId, actorUserId, LIST_PAGE);
-				};
+	public IssueListResponse listIssues(UUID organizationId, UUID actorUserId, IssueListScope scope, IssueListFilters filters) {
+		Specification<Issue> spec =
+				IssueSpecifications.build(
+						organizationId,
+						actorUserId,
+						scope,
+						OPEN_STATUSES,
+						filters.statuses(),
+						filters.priorities());
+		Sort sort = IssueSorts.build(filters.sortField(), filters.sortDesc());
+		Pageable pageable = PageRequest.of(0, LIST_MAX, sort);
+		Page<Issue> page = issueRepository.findAll(spec, pageable);
 		return new IssueListResponse(page.getContent().stream().map(this::toListItem).toList());
 	}
 

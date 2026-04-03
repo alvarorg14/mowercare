@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/changelog/changes/0007-deactivated-by-fk-on-delete-set-null.yaml
   - include:
       file: db/changelog/changes/0008-issues-and-history.yaml
+  - include:
+      file: db/changelog/changes/0009-issues-organization-priority-index.yaml

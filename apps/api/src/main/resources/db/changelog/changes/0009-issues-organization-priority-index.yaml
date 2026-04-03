@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: "0009-issues-organization-priority-index"
+      author: mowercare
+      changes:
+        - createIndex:
+            indexName: idx_issues_organization_id_priority
+            tableName: issues
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: priority
