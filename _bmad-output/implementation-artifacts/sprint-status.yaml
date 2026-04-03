@@ -1,5 +1,5 @@
 # generated: 2026-03-27T12:00:00Z
-# last_updated: 2026-03-31T16:29:36Z
+# last_updated: 2026-04-03T20:10:00Z
 # project: mowercare
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-03-27T12:00:00Z"
-last_updated: "2026-03-31T16:29:36Z"
+last_updated: "2026-04-03T22:00:00Z"
 project: mowercare
 project_key: NOKEY
 tracking_system: file-system
@@ -69,7 +69,7 @@ development_status:
   3-4-issue-detail-view: done
   3-5-update-issue-fields-assignment-status-resolve-close: done
   3-6-assigneepicker-component-and-integration: done
-  3-7-issue-activity-history-on-detail: backlog
+  3-7-issue-activity-history-on-detail: done
   3-8-filter-and-sort-issue-list-mvp-criteria: backlog
   3-9-mobile-accessibility-and-contrast-baseline-for-issue-flows: backlog
   epic-3-retrospective: optional

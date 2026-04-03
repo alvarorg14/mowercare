@@ -116,3 +116,40 @@ export function listIssues(scope: IssueListScope): Promise<IssueListResult> {
   const q = new URLSearchParams({ scope });
   return authenticatedFetchJson(`/api/v1/organizations/${orgId}/issues?${q.toString()}`);
 }
+
+/** Align with `IssueChangeEventItemResponse` / `IssueChangeEventsResponse`. */
+export type IssueChangeEventItem = {
+  id: string;
+  occurredAt: string;
+  changeType: string;
+  actorUserId: string;
+  actorLabel: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+  oldAssigneeLabel: string | null;
+  newAssigneeLabel: string | null;
+};
+
+export type IssueChangeEventsResult = {
+  items: IssueChangeEventItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
+export function listIssueChangeEvents(
+  issueId: string,
+  page = 0,
+  size = 50,
+): Promise<IssueChangeEventsResult> {
+  const orgId = getSessionOrganizationId();
+  if (!orgId) throw new Error('Missing organization id');
+  const q = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+  return authenticatedFetchJson(
+    `/api/v1/organizations/${orgId}/issues/${issueId}/change-events?${q.toString()}`,
+  );
+}

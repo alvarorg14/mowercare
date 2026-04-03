@@ -63,3 +63,7 @@ MVP acceptable per story scope.
 - **`IssueStubController` naming debt:** GET list is live; rename/split controller when structure is next refactored (same as 3.2 note).
 - **Probe query payload for empty-state detection:** Secondary `scope=all` query may return up to 200 rows only to infer “org has issues elsewhere”; story mentioned `limit=1` as an example — acceptable MVP; add `limit` query param or a tiny count endpoint if profiling warrants it.
 - **List sort index:** Optional composite index on `(organization_id, updated_at desc)` per AC5; not added in this story; revisit under load.
+
+## Deferred from: code review of 3-7-issue-activity-history-on-detail.md (2026-04-03)
+
+- **Mobile change-events paging:** `listIssueChangeEvents` only loads the first page (`page=0`, `size=50`). Issues with more than 50 events do not show older activity until load-more or paging is implemented — acceptable MVP unless product requires full on-device history.

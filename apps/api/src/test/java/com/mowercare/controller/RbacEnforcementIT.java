@@ -247,6 +247,70 @@ class RbacEnforcementIT extends AbstractPostgresIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("given admin when GET issue change-events then 200")
+	void givenAdmin_whenGetIssueChangeEvents_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String body = "{\"title\":\"Hist rbac\",\"status\":\"OPEN\",\"priority\":\"MEDIUM\"}";
+		MvcResult created = mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
+						.header("Authorization", "Bearer " + access)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String issueId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
+
+		mockMvc.perform(get(
+						"/api/v1/organizations/{organizationId}/issues/{issueId}/change-events",
+						orgId,
+						issueId)
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items").isArray())
+				.andExpect(jsonPath("$.items[0].changeType").value("CREATED"));
+	}
+
+	@Test
+	@DisplayName("given technician when GET issue change-events then 200")
+	void givenTechnician_whenGetIssueChangeEvents_thenOk() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		seedTechnician(orgId);
+		String adminAccess = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+		String techAccess = loginAccessToken(orgId, "tech@acme.test", "secret12345");
+		String body = "{\"title\":\"Tech reads history\",\"status\":\"OPEN\",\"priority\":\"LOW\"}";
+		MvcResult created = mockMvc.perform(post("/api/v1/organizations/{organizationId}/issues", orgId)
+						.header("Authorization", "Bearer " + adminAccess)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+				.andExpect(status().isCreated())
+				.andReturn();
+		String issueId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asText();
+
+		mockMvc.perform(get(
+						"/api/v1/organizations/{organizationId}/issues/{issueId}/change-events",
+						orgId,
+						issueId)
+						.header("Authorization", "Bearer " + techAccess))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].changeType").value("CREATED"));
+	}
+
+	@Test
+	@DisplayName("given valid token wrong org path when GET issue change-events then 403 TENANT_ACCESS_DENIED")
+	void givenWrongOrg_whenGetIssueChangeEvents_thenTenantDenied() throws Exception {
+		String orgId = bootstrapAndGetOrganizationId();
+		String access = loginAccessToken(orgId, "admin@acme.test", "secret12345");
+
+		mockMvc.perform(get(
+						"/api/v1/organizations/{organizationId}/issues/{issueId}/change-events",
+						FOREIGN_ORG,
+						"00000000-0000-0000-0000-000000000099")
+						.header("Authorization", "Bearer " + access))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.code").value("TENANT_ACCESS_DENIED"));
+	}
+
+	@Test
 	@DisplayName("given technician when GET issue by id then 200")
 	void givenTechnician_whenGetIssueById_thenOk() throws Exception {
 		String orgId = bootstrapAndGetOrganizationId();

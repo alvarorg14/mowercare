@@ -25,6 +25,7 @@ import { getSubjectFromAccessToken } from '../../../lib/jwt-org';
 import { formatRelativeTimeUtc } from '../../../lib/relative-time';
 import { issueStatusTokens } from '../../../lib/theme';
 import { AssigneePicker } from '../../../components/AssigneePicker';
+import { IssueActivityTimeline } from '../../../components/IssueActivityTimeline';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -160,6 +161,7 @@ export default function IssueDetailScreen() {
     onSuccess: async () => {
       lastFailedPatchRef.current = null;
       await queryClient.invalidateQueries({ queryKey: ['issue', orgId, issueId] });
+      await queryClient.invalidateQueries({ queryKey: ['issue-change-events', orgId, issueId] });
       await queryClient.invalidateQueries({ queryKey: ['issues'] });
       setEditing(false);
       setSnackbar({ visible: true, message: 'Saved', mutationRetry: false });
@@ -415,6 +417,10 @@ export default function IssueDetailScreen() {
               )}
             </>
           )}
+          <Text variant="titleSmall" style={styles.section}>
+            Activity
+          </Text>
+          <IssueActivityTimeline orgId={orgId} issueId={issueId} />
         </ScrollView>
       ) : null}
 

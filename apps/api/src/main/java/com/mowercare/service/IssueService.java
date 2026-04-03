@@ -24,6 +24,8 @@ import com.mowercare.model.IssuePriority;
 import com.mowercare.model.IssueStatus;
 import com.mowercare.model.Organization;
 import com.mowercare.model.User;
+import com.mowercare.model.response.IssueChangeEventItemResponse;
+import com.mowercare.model.response.IssueChangeEventsResponse;
 import com.mowercare.model.response.IssueDetailResponse;
 import com.mowercare.model.response.IssueListItemResponse;
 import com.mowercare.model.response.IssueListResponse;
@@ -36,6 +38,8 @@ import com.mowercare.repository.UserRepository;
 public class IssueService {
 
 	private static final int LIST_MAX = 200;
+	private static final int CHANGE_EVENTS_MAX_PAGE = 100;
+
 	private static final Pageable LIST_PAGE =
 			PageRequest.of(0, LIST_MAX, Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")));
 
@@ -62,6 +66,27 @@ public class IssueService {
 	public IssueDetailResponse getIssue(UUID organizationId, UUID issueId) {
 		Issue issue = loadIssue(issueId, organizationId);
 		return toDetailResponse(issue);
+	}
+
+	/**
+	 * Paginated append-only history for an issue. Sort is always {@code occurredAt} ascending (timeline order).
+	 */
+	@Transactional(readOnly = true)
+	public IssueChangeEventsResponse listChangeEvents(UUID organizationId, UUID issueId, Pageable pageable) {
+		loadIssue(issueId, organizationId);
+		int size = Math.min(Math.max(1, pageable.getPageSize()), CHANGE_EVENTS_MAX_PAGE);
+		int page = Math.max(0, pageable.getPageNumber());
+		Pageable sorted = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "occurredAt"));
+		Page<IssueChangeEvent> result =
+				issueChangeEventRepository.findByIssue_IdAndOrganization_Id(issueId, organizationId, sorted);
+		return new IssueChangeEventsResponse(
+				result.getContent().stream()
+						.map(ev -> toChangeEventItem(organizationId, ev))
+						.toList(),
+				result.getTotalElements(),
+				result.getTotalPages(),
+				result.getNumber(),
+				result.getSize());
 	}
 
 	@Transactional(readOnly = true)
@@ -307,5 +332,45 @@ public class IssueService {
 				assigneeLabel,
 				issue.getCreatedAt(),
 				issue.getUpdatedAt());
+	}
+
+	private IssueChangeEventItemResponse toChangeEventItem(UUID organizationId, IssueChangeEvent ev) {
+		User actor = ev.getActor();
+		IssueChangeType type = ev.getChangeType();
+		String oldAssigneeLabel = null;
+		String newAssigneeLabel = null;
+		if (type == IssueChangeType.ASSIGNEE_CHANGED) {
+			oldAssigneeLabel = resolveAssigneeSnapshotLabel(organizationId, ev.getOldValue());
+			newAssigneeLabel = resolveAssigneeSnapshotLabel(organizationId, ev.getNewValue());
+		}
+		return new IssueChangeEventItemResponse(
+				ev.getId(),
+				ev.getOccurredAt(),
+				type,
+				actor.getId(),
+				actor.getEmail(),
+				ev.getOldValue(),
+				ev.getNewValue(),
+				oldAssigneeLabel,
+				newAssigneeLabel);
+	}
+
+	/**
+	 * History stores assignee ids as strings; user may no longer exist in org — show email when present, else
+	 * {@code Former user}. Values that are not valid UUIDs use {@code Unknown}.
+	 */
+	private String resolveAssigneeSnapshotLabel(UUID organizationId, String uuidOrNull) {
+		if (uuidOrNull == null || uuidOrNull.isBlank()) {
+			return null;
+		}
+		try {
+			UUID userId = UUID.fromString(uuidOrNull.trim());
+			return userRepository
+					.findByOrganization_IdAndId(organizationId, userId)
+					.map(User::getEmail)
+					.orElse("Former user");
+		} catch (IllegalArgumentException e) {
+			return "Unknown";
+		}
 	}
 }

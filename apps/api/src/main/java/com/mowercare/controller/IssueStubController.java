@@ -2,6 +2,8 @@ package com.mowercare.controller;
 
 import java.util.UUID;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +27,7 @@ import com.mowercare.exception.InvalidIssuePatchException;
 import com.mowercare.model.request.IssueCreateRequest;
 import com.mowercare.model.request.IssuePatch;
 import com.mowercare.model.request.IssueUpdateRequest;
+import com.mowercare.model.response.IssueChangeEventsResponse;
 import com.mowercare.model.response.IssueCreatedResponse;
 import com.mowercare.model.response.IssueDetailResponse;
 import com.mowercare.model.response.IssueListResponse;
@@ -45,7 +48,7 @@ import jakarta.validation.Valid;
 @Tag(
 		name = "Issues",
 		description =
-				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); GET by id returns full detail; POST create; PATCH partial update; `_admin/reassign` remains stub — see docs/rbac-matrix.md.")
+				"Organization-scoped issues. GET list supports `scope=open|all|mine` (default `open`); GET by id returns full detail; GET `.../issues/{issueId}/change-events` returns paginated history; POST create; PATCH partial update; `_admin/reassign` remains stub — see docs/rbac-matrix.md.")
 @SecurityRequirement(name = "bearer-jwt")
 public class IssueStubController {
 
@@ -138,6 +141,30 @@ public class IssueStubController {
 			@AuthenticationPrincipal Jwt jwt) {
 		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
 		return issueService.getIssue(organizationId, issueId);
+	}
+
+	@GetMapping("/{organizationId}/issues/{issueId}/change-events")
+	@ResponseStatus(HttpStatus.OK)
+	@Operation(
+			summary = "List issue change events",
+			description =
+					"Returns paginated append-only history for the issue, sorted by `occurredAt` ascending. "
+							+ "Query `page` and `size` (default size 50, max 100). "
+							+ "Admin and Technician allowed — see docs/rbac-matrix.md.")
+	@ApiResponse(
+			responseCode = "200",
+			description = "Change events page",
+			content = @Content(schema = @Schema(implementation = IssueChangeEventsResponse.class)))
+	@ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token (RFC 7807)")
+	@ApiResponse(responseCode = "403", description = "JWT organization does not match path (RFC 7807)")
+	@ApiResponse(responseCode = "404", description = "Issue not found in this organization (RFC 7807)")
+	public IssueChangeEventsResponse listIssueChangeEvents(
+			@PathVariable @Schema(description = "Organization id from URL; must match JWT") UUID organizationId,
+			@PathVariable @Schema(description = "Issue id") UUID issueId,
+			@AuthenticationPrincipal Jwt jwt,
+			@PageableDefault(size = 50) Pageable pageable) {
+		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
+		return issueService.listChangeEvents(organizationId, issueId, pageable);
 	}
 
 	@PostMapping(value = "/{organizationId}/issues", consumes = MediaType.APPLICATION_JSON_VALUE)
