@@ -233,7 +233,7 @@ export default function IssueDetailScreen() {
         {editing ? (
           <Appbar.Action icon="close" accessibilityLabel="Cancel editing" onPress={cancelEdit} />
         ) : (
-          <Appbar.BackAction onPress={() => router.back()} />
+          <Appbar.BackAction accessibilityLabel="Go back" onPress={() => router.back()} />
         )}
         <Appbar.Content title={titleText} subtitle={idShort} />
         {data && !editing ? (
@@ -252,6 +252,7 @@ export default function IssueDetailScreen() {
       {!orgId ? (
         <Banner
           visible
+          accessibilityLiveRegion="polite"
           icon="account-alert-outline"
           actions={[{ label: 'Sign in', onPress: () => router.replace('/(auth)') }]}
         >
@@ -271,6 +272,7 @@ export default function IssueDetailScreen() {
       {orgId && idValid && detailQuery.error ? (
         <Banner
           visible
+          accessibilityLiveRegion="polite"
           actions={[{ label: 'Retry', onPress: () => void detailQuery.refetch() }]}
           icon="alert-circle-outline"
         >
@@ -362,7 +364,7 @@ export default function IssueDetailScreen() {
                 </Button>
               </View>
               {mutation.isPending ? (
-                <Text variant="bodyMedium" style={styles.muted}>
+                <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                   Saving…
                 </Text>
               ) : null}
@@ -385,7 +387,7 @@ export default function IssueDetailScreen() {
               </View>
 
               {[data.customerLabel, data.siteLabel].filter(Boolean).length > 0 ? (
-                <Text variant="bodyMedium" style={styles.muted}>
+                <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                   {[data.customerLabel, data.siteLabel].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
@@ -395,15 +397,15 @@ export default function IssueDetailScreen() {
               </Text>
 
               <View style={styles.times}>
-                <Text variant="labelSmall" style={styles.muted}>
+                <Text variant="labelSmall" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                   Updated {formatRelativeTimeUtc(data.updatedAt)}
                 </Text>
-                <Text variant="labelSmall" style={styles.muted}>
+                <Text variant="labelSmall" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                   Created {formatRelativeTimeUtc(data.createdAt)}
                 </Text>
               </View>
 
-              <Text variant="titleSmall" style={styles.section}>
+              <Text variant="titleSmall" style={styles.section} accessibilityRole="header">
                 Description
               </Text>
               {data.description?.trim() ? (
@@ -411,13 +413,13 @@ export default function IssueDetailScreen() {
                   {data.description}
                 </Text>
               ) : (
-                <Text variant="bodyMedium" style={styles.muted}>
+                <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                   No description
                 </Text>
               )}
             </>
           )}
-          <Text variant="titleSmall" style={styles.section}>
+          <Text variant="titleSmall" style={styles.section} accessibilityRole="header">
             Activity
           </Text>
           <IssueActivityTimeline orgId={orgId} issueId={issueId} />
@@ -452,6 +454,8 @@ export default function IssueDetailScreen() {
           lastFailedPatchRef.current = null;
         }}
         duration={snackbar.mutationRetry ? 8000 : 3000}
+        accessibilityLiveRegion="polite"
+        accessibilityRole={snackbar.mutationRetry ? 'alert' : undefined}
         action={
           snackbar.mutationRetry && lastFailedPatchRef.current
             ? {

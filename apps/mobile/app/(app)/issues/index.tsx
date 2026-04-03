@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -171,7 +172,14 @@ export default function IssuesHomeScreen() {
             visible={sortMenuOpen}
             onDismiss={() => setSortMenuOpen(false)}
             anchor={
-              <Button mode="outlined" compact onPress={() => setSortMenuOpen(true)}>
+              <Button
+                mode="outlined"
+                compact
+                onPress={() => setSortMenuOpen(true)}
+                accessibilityLabel={`Sort issues. Current: ${sortMenuLabel(listParams)}`}
+                style={styles.toolbarBtn}
+                contentStyle={styles.toolbarBtnContent}
+              >
                 {sortMenuLabel(listParams)}
               </Button>
             }
@@ -219,11 +227,27 @@ export default function IssuesHomeScreen() {
               }}
             />
           </Menu>
-          <Button mode="outlined" compact onPress={() => setFilterDialogOpen(true)}>
+          <Button
+            mode="outlined"
+            compact
+            onPress={() => setFilterDialogOpen(true)}
+            accessibilityLabel={
+              filterCount > 0
+                ? `Filter issues, ${filterCount} active`
+                : 'Filter issues by status and priority'
+            }
+            style={styles.toolbarBtn}
+            contentStyle={styles.toolbarBtnContent}
+          >
             Filters{filterCount > 0 ? ` (${filterCount})` : ''}
           </Button>
           {hasActiveFilters(listParams) ? (
-            <IconButton icon="filter-off" accessibilityLabel="Reset filters" onPress={resetFiltersKeepScope} />
+            <IconButton
+              icon="filter-off"
+              accessibilityLabel="Reset filters"
+              onPress={resetFiltersKeepScope}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            />
           ) : null}
         </View>
       </View>
@@ -274,6 +298,7 @@ export default function IssuesHomeScreen() {
         <Banner
           visible
           icon="account-alert-outline"
+          accessibilityLiveRegion="polite"
           actions={[{ label: 'Sign in', onPress: () => router.replace('/(auth)') }]}
         >
           Organization is not loaded. Sign in again to view issues.
@@ -283,6 +308,7 @@ export default function IssuesHomeScreen() {
       {orgId && listQuery.error ? (
         <Banner
           visible
+          accessibilityLiveRegion="polite"
           actions={[{ label: 'Retry', onPress: () => void listQuery.refetch() }]}
           icon="alert-circle-outline"
         >
@@ -308,6 +334,8 @@ export default function IssuesHomeScreen() {
             <RefreshControl
               refreshing={listQuery.isFetching && !listQuery.isLoading}
               onRefresh={onRefresh}
+              title={Platform.OS === 'ios' ? 'Pull to refresh' : undefined}
+              accessibilityLabel="Refresh issue list"
             />
           }
           contentContainerStyle={styles.listContent}
@@ -323,7 +351,7 @@ export default function IssuesHomeScreen() {
               <Text variant="bodyLarge">
                 {hasActiveFilters(listParams) ? 'Nothing matches filters' : 'Nothing in this queue'}
               </Text>
-              <Text variant="bodyMedium" style={styles.muted}>
+              <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                 {hasActiveFilters(listParams)
                   ? 'Try clearing filters or view all issues.'
                   : 'Try another scope or view all issues.'}
@@ -338,7 +366,7 @@ export default function IssuesHomeScreen() {
           ) : orgWideEmpty ? (
             <View style={styles.emptyCard}>
               <Text variant="bodyLarge">No issues yet</Text>
-              <Text variant="bodyMedium" style={styles.muted}>
+              <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                 Capture work with New issue.
               </Text>
               <Button mode="contained" onPress={() => router.push('/issues/create')} style={styles.emptyBtn}>
@@ -353,6 +381,7 @@ export default function IssuesHomeScreen() {
         icon="plus"
         label="New issue"
         disabled={!orgId}
+        accessibilityLabel="Create new issue"
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         onPress={() => router.push('/issues/create')}
       />
@@ -365,7 +394,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { paddingHorizontal: 16, paddingTop: 8, gap: 12 },
   toolbar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  muted: { opacity: 0.75 },
+  toolbarBtn: { alignSelf: 'flex-start' },
+  toolbarBtnContent: { minHeight: 44, justifyContent: 'center' },
+  muted: {},
   fab: { position: 'absolute', right: 16, bottom: 24 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 88 },

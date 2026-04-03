@@ -67,3 +67,8 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 3-7-issue-activity-history-on-detail.md (2026-04-03)
 
 - **Mobile change-events paging:** `listIssueChangeEvents` only loads the first page (`page=0`, `size=50`). Issues with more than 50 events do not show older activity until load-more or paging is implemented — acceptable MVP unless product requires full on-device history.
+
+## Deferred from: code review of 3-9-mobile-accessibility-and-contrast-baseline-for-issue-flows.md (2026-04-03)
+
+- **Contrast script duplicates `theme.ts` hex values:** The Node contrast gate keeps its own copy of palette tokens; if `paperTheme` or status tokens change, update both files or the script can give false confidence. Consider generating the script inputs from a single source (build step) when theme churn increases.
+- **AC6 device/OS list vs pending manual checks:** Story acceptance criteria expect the Dev Agent Record to list devices used for manual a11y checks once those runs happen; current record states checks are recommended but not yet performed. Close the loop when iOS/Android spot checks are done.

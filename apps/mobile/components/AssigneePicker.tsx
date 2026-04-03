@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Modal, StyleSheet, View } from 'react-native';
+import { FlatList, Modal, Platform, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Appbar,
@@ -68,6 +68,8 @@ export function AssigneePicker({ visible, onDismiss, onSelectUserId }: Props) {
         animationType="slide"
         onRequestClose={onDismiss}
         onShow={() => setQuery('')}
+        accessibilityViewIsModal={Platform.OS === 'ios'}
+        accessibilityLabel="Choose assignee"
       >
         <View style={[styles.sheet, { backgroundColor: theme.colors.background }]}>
           <Appbar.Header mode="small">

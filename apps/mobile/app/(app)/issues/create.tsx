@@ -92,7 +92,7 @@ export default function CreateIssueScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <Appbar.Header mode="center-aligned">
-        <Appbar.BackAction onPress={() => router.back()} />
+        <Appbar.BackAction accessibilityLabel="Go back" onPress={() => router.back()} />
         <Appbar.Content title="New issue" />
       </Appbar.Header>
 
@@ -148,7 +148,11 @@ export default function CreateIssueScreen() {
               visible={statusMenuOpen}
               onDismiss={() => setStatusMenuOpen(false)}
               anchor={
-                <Button mode="outlined" onPress={() => setStatusMenuOpen(true)}>
+                <Button
+                  mode="outlined"
+                  onPress={() => setStatusMenuOpen(true)}
+                  accessibilityLabel={`Status, ${value}`}
+                >
                   {value}
                 </Button>
               }
@@ -178,7 +182,11 @@ export default function CreateIssueScreen() {
               visible={priorityMenuOpen}
               onDismiss={() => setPriorityMenuOpen(false)}
               anchor={
-                <Button mode="outlined" onPress={() => setPriorityMenuOpen(true)}>
+                <Button
+                  mode="outlined"
+                  onPress={() => setPriorityMenuOpen(true)}
+                  accessibilityLabel={`Priority, ${value}`}
+                >
                   {value}
                 </Button>
               }
@@ -257,7 +265,13 @@ export default function CreateIssueScreen() {
         </Button>
       </ScrollView>
 
-      <Snackbar visible={snackbar.visible} onDismiss={() => setSnackbar((s) => ({ ...s, visible: false }))} duration={4000}>
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={() => setSnackbar((s) => ({ ...s, visible: false }))}
+        duration={4000}
+        accessibilityLiveRegion="polite"
+        accessibilityRole="alert"
+      >
         {snackbar.message}
       </Snackbar>
     </SafeAreaView>

@@ -75,12 +75,25 @@ export function IssueActivityTimeline({ orgId, issueId }: Props) {
   }
 
   if (q.error) {
+    const errText = errorMessage(q.error);
     return (
       <View style={styles.block}>
-        <Text variant="bodyMedium" style={{ color: theme.colors.error }}>
-          {errorMessage(q.error)}
+        <Text
+          variant="bodyMedium"
+          style={{ color: theme.colors.error }}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={`Activity failed to load. ${errText}`}
+        >
+          {errText}
         </Text>
-        <Button mode="text" onPress={() => void q.refetch()}>
+        <Button
+          mode="text"
+          onPress={() => void q.refetch()}
+          accessibilityLabel="Retry loading activity"
+          style={styles.retryBtn}
+          contentStyle={styles.retryContent}
+        >
           Retry
         </Button>
       </View>
@@ -91,7 +104,7 @@ export function IssueActivityTimeline({ orgId, issueId }: Props) {
   if (items.length === 0) {
     return (
       <View style={styles.block}>
-        <Text variant="bodyMedium" style={styles.muted}>
+        <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
           No activity yet
         </Text>
       </View>
@@ -105,19 +118,21 @@ export function IssueActivityTimeline({ orgId, issueId }: Props) {
         const iso = ev.occurredAt;
         const summary = summarizeChangeEvent(ev);
         const actor = ev.actorLabel?.trim() || 'Someone';
-        const a11y = `${summary}. ${actor}. ${iso}`;
+        const a11y = `${summary}. ${actor} · ${rel}. ${iso}`;
         return (
           <View
             key={ev.id}
+            accessible
             style={[styles.row, { borderBottomColor: theme.colors.outlineVariant }]}
+            accessibilityLabel={a11y}
           >
-            <Text variant="bodyLarge" style={styles.summary} accessibilityLabel={a11y}>
+            <Text variant="bodyLarge" style={styles.summary}>
               {summary}
             </Text>
-            <Text variant="bodySmall" style={styles.meta}>
+            <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
               {actor} · {rel}
             </Text>
-            <Text variant="labelSmall" style={styles.iso}>
+            <Text variant="labelSmall" style={[styles.iso, { color: theme.colors.onSurfaceVariant }]}>
               {iso}
             </Text>
           </View>
@@ -131,7 +146,9 @@ const styles = StyleSheet.create({
   block: { marginTop: 8, gap: 12 },
   row: { gap: 4, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   summary: { fontSize: 16 },
-  meta: { opacity: 0.85 },
-  iso: { opacity: 0.65 },
-  muted: { opacity: 0.85 },
+  meta: {},
+  iso: {},
+  muted: {},
+  retryBtn: { alignSelf: 'flex-start' },
+  retryContent: { minHeight: 44, justifyContent: 'center' },
 });

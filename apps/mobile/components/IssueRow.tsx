@@ -36,12 +36,14 @@ export function IssueRow({ item, onPress }: Props) {
   const siteLine = [item.customerLabel, item.siteLabel].filter(Boolean).join(' · ');
   const assignee = item.assigneeLabel?.trim() || 'Unassigned';
   const rel = formatRelativeTimeUtc(item.updatedAt);
+  const st = statusLabel(item.status);
+  const a11yLabel = `Issue ${item.title}. Status ${st}. Priority ${item.priority}. Assignee ${assignee}. Updated ${rel}.`;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Issue ${item.title}, ${item.status}`}
+      accessibilityLabel={a11yLabel}
     >
       <View
         style={[
@@ -53,15 +55,23 @@ export function IssueRow({ item, onPress }: Props) {
           <Text variant="titleMedium" numberOfLines={2} style={styles.flex}>
             {item.title}
           </Text>
-          <Text variant="labelSmall" style={styles.time}>
+          <Text variant="labelSmall" style={[styles.time, { color: theme.colors.onSurfaceVariant }]}>
             {rel}
           </Text>
         </View>
-        <Text variant="labelSmall" style={styles.idHint} numberOfLines={1}>
+        <Text
+          variant="labelSmall"
+          style={[styles.idHint, { color: theme.colors.onSurfaceVariant }]}
+          numberOfLines={1}
+        >
           {item.id.slice(0, 8)}…
         </Text>
         {siteLine ? (
-          <Text variant="bodySmall" numberOfLines={2} style={styles.muted}>
+          <Text
+            variant="bodySmall"
+            numberOfLines={2}
+            style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}
+          >
             {siteLine}
           </Text>
         ) : null}
@@ -97,9 +107,9 @@ const styles = StyleSheet.create({
   },
   topLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   flex: { flex: 1 },
-  time: { opacity: 0.75, maxWidth: '28%' },
-  idHint: { opacity: 0.6, fontFamily: 'monospace' },
-  muted: { opacity: 0.85 },
+  time: { maxWidth: '28%' },
+  idHint: { fontFamily: 'monospace' },
+  muted: {},
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   chip: { minHeight: 32 },
   chipText: { fontSize: 12 },

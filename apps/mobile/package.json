@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:contrast": "node ./scripts/check-issue-theme-contrast.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
