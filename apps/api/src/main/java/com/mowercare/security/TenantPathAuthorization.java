@@ -26,6 +26,14 @@ public final class TenantPathAuthorization {
 		}
 	}
 
+	/** Resolves {@code sub} as a UUID or throws {@link InvalidAccessTokenClaimsException} (401). */
+	public static UUID requireSubjectAsUuid(Jwt jwt) {
+		if (jwt == null) {
+			throw new InvalidAccessTokenClaimsException();
+		}
+		return parseRequiredUuid(jwt.getSubject());
+	}
+
 	private static UUID requireUuidClaim(Jwt jwt, String claimName) {
 		return parseRequiredUuid(jwt.getClaimAsString(claimName));
 	}

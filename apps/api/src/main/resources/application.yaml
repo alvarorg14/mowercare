@@ -19,6 +19,10 @@ spring:
 mowercare:
   bootstrap:
     token: ${MOWERCARE_BOOTSTRAP_TOKEN:}
+  # FCM (optional). When enabled=false, push sends are skipped — integration tests and local dev need no credentials.
+  firebase:
+    enabled: ${MOWERCARE_FIREBASE_ENABLED:false}
+    credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:}
   invite:
     token-ttl: ${MOWERCARE_INVITE_TOKEN_TTL:P14D}
   jwt:

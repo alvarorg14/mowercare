@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { verifyTenantScope } from './api';
+import { revokeRegisteredDevicePushToken } from './notifications';
 import { loginApi, logoutApi, refreshApi } from './auth-api';
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from './auth-storage';
 import { getOrganizationIdFromAccessToken, getRoleFromAccessToken } from './jwt-org';
@@ -87,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const signOut = useCallback(async () => {
+    await revokeRegisteredDevicePushToken();
     const refresh = await getRefreshToken();
     if (refresh) {
       try {

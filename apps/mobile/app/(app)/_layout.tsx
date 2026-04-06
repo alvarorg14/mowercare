@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { PushNotificationSetup } from '../../components/PushNotificationSetup';
 import { useAuth } from '../../lib/auth-context';
 
 export default function AppGroupLayout() {
@@ -17,7 +18,12 @@ export default function AppGroupLayout() {
   if (!isAuthenticated) {
     return <Redirect href="/(auth)" />;
   }
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <>
+      <PushNotificationSetup />
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

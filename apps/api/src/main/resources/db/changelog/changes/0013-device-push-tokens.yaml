@@ -1,0 +1,76 @@
+# device_push_tokens: FCM/APNs device tokens per user per org (Story 4.4).
+# Unique (organization_id, user_id, token) allows multiple devices; same token re-registered updates updated_at.
+databaseChangeLog:
+  - changeSet:
+      id: "0013-device-push-tokens"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - createTable:
+            tableName: device_push_tokens
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: platform
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            constraintName: uq_device_push_tokens_org_user_token
+            tableName: device_push_tokens
+            columnNames: organization_id, user_id, token
+        - addForeignKeyConstraint:
+            constraintName: fk_device_push_tokens_organization
+            baseTableName: device_push_tokens
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_device_push_tokens_user
+            baseTableName: device_push_tokens
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_device_push_tokens_org_user
+            tableName: device_push_tokens
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: user_id
+      rollback:
+        - dropTable:
+            tableName: device_push_tokens

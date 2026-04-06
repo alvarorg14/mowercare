@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mowercare.exception.InvalidAccessTokenClaimsException;
 import com.mowercare.model.response.TenantScopeResponse;
 import com.mowercare.security.TenantPathAuthorization;
 
@@ -47,23 +46,8 @@ public class TenantScopeController {
 			@PathVariable @Schema(description = "Organization id from URL; must match JWT") UUID organizationId,
 			@AuthenticationPrincipal Jwt jwt) {
 		TenantPathAuthorization.requireJwtOrganizationMatchesPath(organizationId, jwt);
-		UUID userId = requireSubjectAsUuid(jwt);
+		UUID userId = TenantPathAuthorization.requireSubjectAsUuid(jwt);
 		String role = jwt.getClaimAsString("role");
 		return new TenantScopeResponse(organizationId, userId, role);
-	}
-
-	private static UUID requireSubjectAsUuid(Jwt jwt) {
-		return parseRequiredUuid(jwt.getSubject());
-	}
-
-	private static UUID parseRequiredUuid(String raw) {
-		if (raw == null || raw.isBlank()) {
-			throw new InvalidAccessTokenClaimsException();
-		}
-		try {
-			return UUID.fromString(raw.trim());
-		} catch (IllegalArgumentException ex) {
-			throw new InvalidAccessTokenClaimsException();
-		}
 	}
 }

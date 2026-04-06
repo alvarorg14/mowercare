@@ -38,7 +38,7 @@ const config: ExpoConfig = {
   web: {
     favicon: './assets/favicon.png',
   },
-  plugins: ['expo-router'],
+  plugins: ['expo-router', 'expo-notifications'],
   extra: {
     apiBaseUrl,
   },

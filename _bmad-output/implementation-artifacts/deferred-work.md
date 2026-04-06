@@ -85,3 +85,8 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 4-3-in-app-notification-list-rest-and-ui.md (2026-04-06)
 
 - **Notification list first page only in mobile:** The screen always requests `page=0` and `size=50`; additional pages are not loaded. Acceptable for MVP; add infinite scroll or “load more” when backlog warrants.
+
+## Deferred from: code review of 4-4-device-registration-and-push-delivery.md (2026-04-06)
+
+- **EAS / store builds: confirm push entitlements and Android channels (AC8):** Plugin-only `app.config.ts` change may be enough for dev client; validate on first EAS iOS/Android release that entitlements and channels match Expo 55 docs.
+- **Push runs inside same DB transaction as recipient insert:** `NotificationRecipientFanoutService` calls `dispatchForNewRecipient` before commit; slow or flaky FCM prolongs the transaction. Acceptable for MVP; revisit async/after-commit if latency or timeouts appear.

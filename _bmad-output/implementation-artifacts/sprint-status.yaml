@@ -78,6 +78,6 @@ development_status:
   4-1-notification-records-and-issue-event-taxonomy: done
   4-2-notification-delivery-rules-by-role: done
   4-3-in-app-notification-list-rest-and-ui: done
-  4-4-device-registration-and-push-delivery: backlog
+  4-4-device-registration-and-push-delivery: done
   4-5-deep-link-from-push-to-issue-detail: backlog
   epic-4-retrospective: optional

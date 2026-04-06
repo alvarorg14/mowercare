@@ -22,11 +22,15 @@ public class NotificationRecipientFanoutService {
 
 	private final UserRepository userRepository;
 	private final NotificationRecipientRepository notificationRecipientRepository;
+	private final NotificationPushDispatcher notificationPushDispatcher;
 
 	public NotificationRecipientFanoutService(
-			UserRepository userRepository, NotificationRecipientRepository notificationRecipientRepository) {
+			UserRepository userRepository,
+			NotificationRecipientRepository notificationRecipientRepository,
+			NotificationPushDispatcher notificationPushDispatcher) {
 		this.userRepository = userRepository;
 		this.notificationRecipientRepository = notificationRecipientRepository;
+		this.notificationPushDispatcher = notificationPushDispatcher;
 	}
 
 	@Transactional
@@ -57,9 +61,11 @@ public class NotificationRecipientFanoutService {
 				};
 
 		for (UUID recipientId : recipientIds) {
-			notificationRecipientRepository.save(
-					new NotificationRecipient(
-							event.getOrganization(), event, userRepository.getReferenceById(recipientId)));
+			NotificationRecipient saved =
+					notificationRecipientRepository.save(
+							new NotificationRecipient(
+									event.getOrganization(), event, userRepository.getReferenceById(recipientId)));
+			notificationPushDispatcher.dispatchForNewRecipient(saved, event);
 		}
 	}
 }
