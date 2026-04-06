@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getAccessToken, getSessionOrganizationId } from '../../../../lib/auth/session';
 import { getIssue, patchIssue, type IssueDetail, type IssueUpdatePayload } from '../../../../lib/issue-api';
+import { ISSUE_UUID_RE } from '../../../../lib/push-navigation';
 import { issuePriorities, issueStatuses } from '../../../../lib/issue-create-schema';
 import { ApiProblemError } from '../../../../lib/http';
 import { getSubjectFromAccessToken } from '../../../../lib/jwt-org';
@@ -26,9 +27,6 @@ import { formatRelativeTimeUtc } from '../../../../lib/relative-time';
 import { issueStatusTokens } from '../../../../lib/theme';
 import { AssigneePicker } from '../../../../components/AssigneePicker';
 import { IssueActivityTimeline } from '../../../../components/IssueActivityTimeline';
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function errorMessage(err: unknown): string {
   if (err instanceof ApiProblemError) return err.detail ?? err.title ?? 'Request failed';
@@ -115,7 +113,7 @@ export default function IssueDetailScreen() {
   const { id: idParam } = useLocalSearchParams<{ id: string | string[] }>();
   const issueId = normalizeIdParam(idParam);
   const orgId = getSessionOrganizationId();
-  const idValid = UUID_RE.test(issueId);
+  const idValid = ISSUE_UUID_RE.test(issueId);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -273,7 +271,13 @@ export default function IssueDetailScreen() {
         <Banner
           visible
           accessibilityLiveRegion="polite"
-          actions={[{ label: 'Retry', onPress: () => void detailQuery.refetch() }]}
+          actions={[
+            { label: 'Retry', onPress: () => void detailQuery.refetch() },
+            {
+              label: 'Back to issues',
+              onPress: () => router.replace('/(app)/(tabs)/issues'),
+            },
+          ]}
           icon="alert-circle-outline"
         >
           {errorMessage(detailQuery.error)}
