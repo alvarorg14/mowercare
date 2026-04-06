@@ -72,3 +72,8 @@ MVP acceptable per story scope.
 
 - **Contrast script duplicates `theme.ts` hex values:** The Node contrast gate keeps its own copy of palette tokens; if `paperTheme` or status tokens change, update both files or the script can give false confidence. Consider generating the script inputs from a single source (build step) when theme churn increases.
 - **AC6 device/OS list vs pending manual checks:** Story acceptance criteria expect the Dev Agent Record to list devices used for manual a11y checks once those runs happen; current record states checks are recommended but not yet performed. Close the loop when iOS/Android spot checks are done.
+
+## Deferred from: code review of 4-1-notification-records-and-issue-event-taxonomy.md (2026-04-06)
+
+- **Mobile Jest + lockfile churn alongside 4.1 backend work:** `apps/mobile` test tooling and `package-lock.json` changes are not listed in the story file list; split chore PRs when possible for reviewability.
+- **`event_type` without CHECK constraint:** Optional per AC2; consider a PostgreSQL CHECK or enum mapping if future stories require DB-enforced taxonomy invariants.

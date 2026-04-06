@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.mowercare.exception.ResourceNotFoundException;
 import com.mowercare.model.Issue;
@@ -17,16 +18,20 @@ import com.mowercare.model.IssueChangeEvent;
 import com.mowercare.model.IssueChangeType;
 import com.mowercare.model.IssuePriority;
 import com.mowercare.model.IssueStatus;
+import com.mowercare.model.NotificationEvent;
+import com.mowercare.model.NotificationEventType;
 import com.mowercare.model.Organization;
 import com.mowercare.model.User;
 import com.mowercare.model.UserRole;
 import com.mowercare.repository.IssueChangeEventRepository;
 import com.mowercare.repository.IssueRepository;
+import com.mowercare.repository.NotificationEventRepository;
 import com.mowercare.repository.OrganizationRepository;
 import com.mowercare.repository.RefreshTokenRepository;
 import com.mowercare.repository.UserRepository;
 import com.mowercare.testsupport.AbstractPostgresIntegrationTest;
 
+@Transactional
 class IssueServiceIT extends AbstractPostgresIntegrationTest {
 
 	@Autowired
@@ -37,6 +42,9 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 
 	@Autowired
 	private IssueChangeEventRepository issueChangeEventRepository;
+
+	@Autowired
+	private NotificationEventRepository notificationEventRepository;
 
 	@Autowired
 	private OrganizationRepository organizationRepository;
@@ -52,6 +60,7 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 
 	@BeforeEach
 	void clean() {
+		notificationEventRepository.deleteAll();
 		issueChangeEventRepository.deleteAll();
 		issueRepository.deleteAll();
 		refreshTokenRepository.deleteAll();
@@ -86,6 +95,13 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 		assertThat(afterCreate.getFirst().getActor().getId()).isEqualTo(actor.getId());
 		assertThat(afterCreate.getFirst().getNewValue()).isEqualTo("Blade stuck");
 
+		List<NotificationEvent> notifAfterCreate =
+				notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId());
+		assertThat(notifAfterCreate).hasSize(1);
+		assertThat(notifAfterCreate.getFirst().getEventType()).isEqualTo(NotificationEventType.ISSUE_CREATED.taxonomyValue());
+		assertThat(notifAfterCreate.getFirst().getSourceIssueChangeEvent().getId())
+				.isEqualTo(afterCreate.getFirst().getId());
+
 		issueService.updateStatus(issue.getId(), orgA.getId(), actor.getId(), IssueStatus.IN_PROGRESS);
 
 		List<IssueChangeEvent> afterStatus =
@@ -95,6 +111,13 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 		assertThat(afterStatus.get(1).getOldValue()).isEqualTo(IssueStatus.OPEN.name());
 		assertThat(afterStatus.get(1).getNewValue()).isEqualTo(IssueStatus.IN_PROGRESS.name());
 		assertThat(afterStatus.get(1).getActor().getId()).isEqualTo(actor.getId());
+
+		List<NotificationEvent> notifAfterStatus =
+				notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId());
+		assertThat(notifAfterStatus).hasSize(2);
+		assertThat(notifAfterStatus.get(1).getEventType())
+				.isEqualTo(NotificationEventType.ISSUE_STATUS_CHANGED.taxonomyValue());
+		assertThat(notifAfterStatus.get(1).getOccurredAt()).isEqualTo(afterStatus.get(1).getOccurredAt());
 
 		Organization orgB = organizationRepository.save(new Organization("Org B"));
 		assertThat(issueRepository.findByIdAndOrganization_Id(issue.getId(), orgB.getId())).isEmpty();
@@ -123,6 +146,10 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 
 		assertThat(issueChangeEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()))
 				.hasSize(1);
+		assertThat(notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()))
+				.hasSize(1)
+				.first()
+				.satisfies(n -> assertThat(n.getEventType()).isEqualTo(NotificationEventType.ISSUE_CREATED.taxonomyValue()));
 	}
 
 	@Test
@@ -182,6 +209,11 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 		assertThat(events.get(1).getChangeType()).isEqualTo(IssueChangeType.PRIORITY_CHANGED);
 		assertThat(events.get(1).getOldValue()).isEqualTo(IssuePriority.LOW.name());
 		assertThat(events.get(1).getNewValue()).isEqualTo(IssuePriority.HIGH.name());
+
+		assertThat(notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()))
+				.hasSize(1)
+				.first()
+				.satisfies(n -> assertThat(n.getEventType()).isEqualTo(NotificationEventType.ISSUE_CREATED.taxonomyValue()));
 	}
 
 	@Test
@@ -213,6 +245,42 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 		assertThat(events.get(2).getChangeType()).isEqualTo(IssueChangeType.DESCRIPTION_CHANGED);
 		assertThat(events.get(2).getOldValue()).isNull();
 		assertThat(events.get(2).getNewValue()).isEqualTo("Details");
+
+		assertThat(notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()))
+				.hasSize(1)
+				.first()
+				.satisfies(n -> assertThat(n.getEventType()).isEqualTo(NotificationEventType.ISSUE_CREATED.taxonomyValue()));
+	}
+
+	@Test
+	@DisplayName("Given assignee change, when updateAssignee, then issue.assigned notification")
+	void given_assigneeChange_whenUpdateAssignee_thenIssueAssignedNotification() {
+		Organization org = organizationRepository.save(new Organization("Org Notif Assign"));
+		User actor = userRepository.save(
+				new User(org, "admin@na.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User first = userRepository.save(
+				new User(org, "first@na.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+		User second = userRepository.save(
+				new User(org, "second@na.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+
+		Issue issue = issueService.createIssue(
+				org.getId(),
+				actor.getId(),
+				"N",
+				null,
+				IssueStatus.OPEN,
+				IssuePriority.MEDIUM,
+				first.getId(),
+				null,
+				null);
+
+		issueService.updateAssignee(issue.getId(), org.getId(), actor.getId(), second.getId());
+
+		List<NotificationEvent> notifs = notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId());
+		assertThat(notifs).hasSize(2);
+		assertThat(notifs.get(0).getEventType()).isEqualTo(NotificationEventType.ISSUE_CREATED.taxonomyValue());
+		assertThat(notifs.get(1).getEventType()).isEqualTo(NotificationEventType.ISSUE_ASSIGNED.taxonomyValue());
+		assertThat(notifs.get(1).getActor().getId()).isEqualTo(actor.getId());
 	}
 
 	@Test

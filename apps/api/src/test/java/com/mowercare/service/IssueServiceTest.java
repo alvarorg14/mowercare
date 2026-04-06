@@ -3,6 +3,7 @@ package com.mowercare.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,6 +56,9 @@ class IssueServiceTest {
 	@Mock
 	private UserRepository userRepository;
 
+	@Mock
+	private NotificationEventRecorder notificationEventRecorder;
+
 	@InjectMocks
 	private IssueService issueService;
 
@@ -70,6 +74,7 @@ class IssueServiceTest {
 		ReflectionTestUtils.setField(actor, "id", ACTOR_ID);
 		assignee = new User(organization, "assignee@test", "hash", UserRole.TECHNICIAN);
 		ReflectionTestUtils.setField(assignee, "id", ASSIGNEE_ID);
+		lenient().when(issueChangeEventRepository.save(any(IssueChangeEvent.class))).thenAnswer(inv -> inv.getArgument(0));
 	}
 
 	@Test

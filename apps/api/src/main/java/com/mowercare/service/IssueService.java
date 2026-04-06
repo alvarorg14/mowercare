@@ -51,16 +51,19 @@ public class IssueService {
 	private final IssueChangeEventRepository issueChangeEventRepository;
 	private final OrganizationRepository organizationRepository;
 	private final UserRepository userRepository;
+	private final NotificationEventRecorder notificationEventRecorder;
 
 	public IssueService(
 			IssueRepository issueRepository,
 			IssueChangeEventRepository issueChangeEventRepository,
 			OrganizationRepository organizationRepository,
-			UserRepository userRepository) {
+			UserRepository userRepository,
+			NotificationEventRecorder notificationEventRecorder) {
 		this.issueRepository = issueRepository;
 		this.issueChangeEventRepository = issueChangeEventRepository;
 		this.organizationRepository = organizationRepository;
 		this.userRepository = userRepository;
+		this.notificationEventRecorder = notificationEventRecorder;
 	}
 
 	@Transactional(readOnly = true)
@@ -302,9 +305,11 @@ public class IssueService {
 	}
 
 	private void appendEvent(Issue issue, User actor, IssueChangeType type, String oldValue, String newValue) {
+		Instant occurredAt = Instant.now();
 		IssueChangeEvent event = new IssueChangeEvent(
-				issue, issue.getOrganization(), actor, Instant.now(), type, oldValue, newValue);
-		issueChangeEventRepository.save(event);
+				issue, issue.getOrganization(), actor, occurredAt, type, oldValue, newValue);
+		IssueChangeEvent saved = issueChangeEventRepository.save(event);
+		notificationEventRecorder.recordIfMvp(saved);
 	}
 
 	private IssueDetailResponse toDetailResponse(Issue issue) {

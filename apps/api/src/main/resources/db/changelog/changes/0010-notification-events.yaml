@@ -1,0 +1,95 @@
+# notification_events: domain notification rows for MVP taxonomy (FR20). issue_id CASCADE with issue;
+# source_issue_change_event_id SET NULL if history row removed independently (unlikely).
+databaseChangeLog:
+  - changeSet:
+      id: "0010-notification-events"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - createTable:
+            tableName: notification_events
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issue_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_issue_change_event_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_events_organization
+            baseTableName: notification_events
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_events_issue
+            baseTableName: notification_events
+            baseColumnNames: issue_id
+            referencedTableName: issues
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_events_actor_user
+            baseTableName: notification_events
+            baseColumnNames: actor_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_events_source_issue_change_event
+            baseTableName: notification_events
+            baseColumnNames: source_issue_change_event_id
+            referencedTableName: issue_change_events
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            indexName: idx_notification_events_organization_occurred
+            tableName: notification_events
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: occurred_at
+                  descending: true
+        - createIndex:
+            indexName: idx_notification_events_issue_occurred
+            tableName: notification_events
+            columns:
+              - column:
+                  name: issue_id
+              - column:
+                  name: occurred_at
+      rollback:
+        - dropTable:
+            tableName: notification_events
