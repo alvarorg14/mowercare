@@ -77,3 +77,7 @@ MVP acceptable per story scope.
 
 - **Mobile Jest + lockfile churn alongside 4.1 backend work:** `apps/mobile` test tooling and `package-lock.json` changes are not listed in the story file list; split chore PRs when possible for reviewability.
 - **`event_type` without CHECK constraint:** Optional per AC2; consider a PostgreSQL CHECK or enum mapping if future stories require DB-enforced taxonomy invariants.
+
+## Deferred from: code review of 4-2-notification-delivery-rules-by-role.md (2026-04-06)
+
+- **No failure-injected integration test for transactional fan-out (AC3):** `NotificationEventRecorder` + fan-out share the issue transaction; rollback behavior on persistence failure is not proven by tests — acceptable unless product requires explicit regression harness.

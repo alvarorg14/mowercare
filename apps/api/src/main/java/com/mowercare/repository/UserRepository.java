@@ -25,6 +25,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
 	Optional<User> findByInviteTokenHash(String inviteTokenHash);
 
+	List<User> findByOrganization_IdAndRoleAndAccountStatus(
+			UUID organizationId, UserRole role, AccountStatus accountStatus);
+
 	long countByOrganization_IdAndRole(UUID organizationId, UserRole role);
 
 	long countByOrganization_IdAndRoleAndAccountStatus(

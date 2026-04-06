@@ -3,7 +3,9 @@ package com.mowercare.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mowercare.exception.ResourceNotFoundException;
+import com.mowercare.model.AccountStatus;
 import com.mowercare.model.Issue;
 import com.mowercare.model.IssueChangeEvent;
 import com.mowercare.model.IssueChangeType;
@@ -25,7 +28,9 @@ import com.mowercare.model.User;
 import com.mowercare.model.UserRole;
 import com.mowercare.repository.IssueChangeEventRepository;
 import com.mowercare.repository.IssueRepository;
+import com.mowercare.model.NotificationRecipient;
 import com.mowercare.repository.NotificationEventRepository;
+import com.mowercare.repository.NotificationRecipientRepository;
 import com.mowercare.repository.OrganizationRepository;
 import com.mowercare.repository.RefreshTokenRepository;
 import com.mowercare.repository.UserRepository;
@@ -47,6 +52,9 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 	private NotificationEventRepository notificationEventRepository;
 
 	@Autowired
+	private NotificationRecipientRepository notificationRecipientRepository;
+
+	@Autowired
 	private OrganizationRepository organizationRepository;
 
 	@Autowired
@@ -60,6 +68,7 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 
 	@BeforeEach
 	void clean() {
+		notificationRecipientRepository.deleteAll();
 		notificationEventRepository.deleteAll();
 		issueChangeEventRepository.deleteAll();
 		issueRepository.deleteAll();
@@ -281,6 +290,11 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 		assertThat(notifs.get(0).getEventType()).isEqualTo(NotificationEventType.ISSUE_CREATED.taxonomyValue());
 		assertThat(notifs.get(1).getEventType()).isEqualTo(NotificationEventType.ISSUE_ASSIGNED.taxonomyValue());
 		assertThat(notifs.get(1).getActor().getId()).isEqualTo(actor.getId());
+
+		List<NotificationRecipient> assignedRec =
+				notificationRecipientRepository.findByNotificationEvent_Id(notifs.get(1).getId());
+		assertThat(assignedRec).hasSize(1);
+		assertThat(assignedRec.getFirst().getRecipient().getId()).isEqualTo(second.getId());
 	}
 
 	@Test
@@ -305,5 +319,196 @@ class IssueServiceIT extends AbstractPostgresIntegrationTest {
 		assertThatThrownBy(() -> issueService.updateStatus(issue.getId(), orgB.getId(), actor.getId(), IssueStatus.CLOSED))
 				.isInstanceOf(ResourceNotFoundException.class)
 				.hasMessageContaining("Issue");
+	}
+
+	@Test
+	@DisplayName("Story 4.2: issue.created — actor admin excluded; assignee technician receives row")
+	void given_createIssue_whenAssigneeTechnician_thenRecipientIsAssigneeOnly() {
+		Organization org = organizationRepository.save(new Organization("Org Recipients 1"));
+		User adminActor = userRepository.save(
+				new User(org, "admin@rec1.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User tech = userRepository.save(
+				new User(org, "tech@rec1.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+
+		Issue issue =
+				issueService.createIssue(
+						org.getId(),
+						adminActor.getId(),
+						"T",
+						null,
+						IssueStatus.OPEN,
+						IssuePriority.LOW,
+						tech.getId(),
+						null,
+						null);
+
+		NotificationEvent created =
+				notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()).getFirst();
+		List<NotificationRecipient> rec = notificationRecipientRepository.findByNotificationEvent_Id(created.getId());
+		assertThat(rec).hasSize(1);
+		assertThat(rec.getFirst().getRecipient().getId()).isEqualTo(tech.getId());
+	}
+
+	@Test
+	@DisplayName("Story 4.2: issue.created — assignee admin deduped to one row when also only other eligible admin")
+	void given_createIssue_whenAssigneeIsSecondAdmin_thenSingleRecipientRow() {
+		Organization org = organizationRepository.save(new Organization("Org Recipients 2"));
+		User adminActor = userRepository.save(
+				new User(org, "a1@rec2.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User adminAssignee = userRepository.save(
+				new User(org, "a2@rec2.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+
+		Issue issue =
+				issueService.createIssue(
+						org.getId(),
+						adminActor.getId(),
+						"T",
+						null,
+						IssueStatus.OPEN,
+						IssuePriority.LOW,
+						adminAssignee.getId(),
+						null,
+						null);
+
+		UUID neId = notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()).getFirst().getId();
+		List<NotificationRecipient> rec = notificationRecipientRepository.findByNotificationEvent_Id(neId);
+		assertThat(rec).hasSize(1);
+		assertThat(rec.getFirst().getRecipient().getId()).isEqualTo(adminAssignee.getId());
+	}
+
+	@Test
+	@DisplayName("Story 4.2: issue.status_changed — non-actor admin and assignee notified")
+	void given_statusChange_whenTwoAdminsAndAssigneeTech_thenRecipientsExcludeActor() {
+		Organization org = organizationRepository.save(new Organization("Org Recipients 3"));
+		User adminActor = userRepository.save(
+				new User(org, "a1@rec3.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User adminOther = userRepository.save(
+				new User(org, "a2@rec3.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User tech = userRepository.save(
+				new User(org, "t@rec3.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+
+		Issue issue =
+				issueService.createIssue(
+						org.getId(),
+						adminActor.getId(),
+						"T",
+						null,
+						IssueStatus.OPEN,
+						IssuePriority.LOW,
+						tech.getId(),
+						null,
+						null);
+
+		issueService.updateStatus(issue.getId(), org.getId(), adminActor.getId(), IssueStatus.IN_PROGRESS);
+
+		List<NotificationEvent> evs = notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId());
+		assertThat(evs).hasSize(2);
+		UUID statusEventId = evs.get(1).getId();
+		List<NotificationRecipient> rec = notificationRecipientRepository.findByNotificationEvent_Id(statusEventId);
+		assertThat(rec).hasSize(2);
+		assertThat(rec.stream().map(NotificationRecipient::getRecipient).map(User::getId).toList())
+				.containsExactlyInAnyOrder(tech.getId(), adminOther.getId());
+	}
+
+	@Test
+	@DisplayName("Story 4.2: issue.assigned — unassign notifies non-actor admins only")
+	void given_unassign_whenTwoAdmins_thenAssignedEventRecipientIsOtherAdminOnly() {
+		Organization org = organizationRepository.save(new Organization("Org Recipients 4"));
+		User actor = userRepository.save(
+				new User(org, "a1@rec4.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User otherAdmin = userRepository.save(
+				new User(org, "a2@rec4.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User tech = userRepository.save(
+				new User(org, "t@rec4.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+
+		Issue issue =
+				issueService.createIssue(
+						org.getId(),
+						actor.getId(),
+						"T",
+						null,
+						IssueStatus.OPEN,
+						IssuePriority.LOW,
+						tech.getId(),
+						null,
+						null);
+
+		issueService.updateAssignee(issue.getId(), org.getId(), actor.getId(), null);
+
+		List<NotificationEvent> evs = notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId());
+		assertThat(evs).hasSize(2);
+		List<NotificationRecipient> rec =
+				notificationRecipientRepository.findByNotificationEvent_Id(evs.get(1).getId());
+		assertThat(rec).hasSize(1);
+		assertThat(rec.getFirst().getRecipient().getId()).isEqualTo(otherAdmin.getId());
+	}
+
+	@Test
+	@DisplayName("Story 4.2: issue.created — PENDING_INVITE admin does not receive recipient row")
+	void given_createIssue_whenPendingInviteAdminInOrg_thenOnlyActiveAssigneeReceives() {
+		Organization org = organizationRepository.save(new Organization("Org Recipients 5"));
+		User adminActor = userRepository.save(
+				new User(org, "admin@rec5.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User pendingAdmin =
+				userRepository.save(
+						new User(
+								org,
+								"pending@rec5.test",
+								passwordEncoder.encode("password123"),
+								UserRole.ADMIN,
+								AccountStatus.PENDING_INVITE,
+								"invite-token-hash-rec5",
+								Instant.now().plusSeconds(86400)));
+		User tech = userRepository.save(
+				new User(org, "tech@rec5.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+
+		Issue issue =
+				issueService.createIssue(
+						org.getId(),
+						adminActor.getId(),
+						"T",
+						null,
+						IssueStatus.OPEN,
+						IssuePriority.LOW,
+						tech.getId(),
+						null,
+						null);
+
+		NotificationEvent created =
+				notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()).getFirst();
+		List<NotificationRecipient> rec = notificationRecipientRepository.findByNotificationEvent_Id(created.getId());
+		assertThat(rec).hasSize(1);
+		assertThat(rec.getFirst().getRecipient().getId()).isEqualTo(tech.getId());
+		assertThat(rec.stream().map(NotificationRecipient::getRecipient).map(User::getId))
+				.doesNotContain(pendingAdmin.getId());
+	}
+
+	@Test
+	@DisplayName("Story 4.2: issue.created — deactivated assignee does not receive recipient row")
+	void given_createIssue_whenAssigneeDeactivated_thenNoRecipientRows() {
+		Organization org = organizationRepository.save(new Organization("Org Recipients 6"));
+		User adminActor = userRepository.save(
+				new User(org, "admin@rec6.test", passwordEncoder.encode("password123"), UserRole.ADMIN));
+		User tech = userRepository.save(
+				new User(org, "tech@rec6.test", passwordEncoder.encode("password123"), UserRole.TECHNICIAN));
+		tech.deactivate(adminActor.getId(), Instant.now());
+		userRepository.save(tech);
+
+		Issue issue =
+				issueService.createIssue(
+						org.getId(),
+						adminActor.getId(),
+						"T",
+						null,
+						IssueStatus.OPEN,
+						IssuePriority.LOW,
+						tech.getId(),
+						null,
+						null);
+
+		NotificationEvent created =
+				notificationEventRepository.findByIssue_IdOrderByOccurredAtAsc(issue.getId()).getFirst();
+		List<NotificationRecipient> rec = notificationRecipientRepository.findByNotificationEvent_Id(created.getId());
+		assertThat(rec).isEmpty();
 	}
 }

@@ -15,22 +15,30 @@ import com.mowercare.repository.NotificationEventRepository;
 public class NotificationEventRecorder {
 
 	private final NotificationEventRepository notificationEventRepository;
+	private final NotificationRecipientFanoutService notificationRecipientFanoutService;
 
-	public NotificationEventRecorder(NotificationEventRepository notificationEventRepository) {
+	public NotificationEventRecorder(
+			NotificationEventRepository notificationEventRepository,
+			NotificationRecipientFanoutService notificationRecipientFanoutService) {
 		this.notificationEventRepository = notificationEventRepository;
+		this.notificationRecipientFanoutService = notificationRecipientFanoutService;
 	}
 
 	@Transactional
 	public void recordIfMvp(IssueChangeEvent persistedChangeEvent) {
 		NotificationEventType.fromIssueChangeType(persistedChangeEvent.getChangeType())
 				.ifPresent(
-						type -> notificationEventRepository.save(
-								new NotificationEvent(
-										persistedChangeEvent.getIssue(),
-										persistedChangeEvent.getOrganization(),
-										persistedChangeEvent.getActor(),
-										persistedChangeEvent.getOccurredAt(),
-										type,
-										persistedChangeEvent)));
+						type -> {
+							NotificationEvent saved =
+									notificationEventRepository.save(
+											new NotificationEvent(
+													persistedChangeEvent.getIssue(),
+													persistedChangeEvent.getOrganization(),
+													persistedChangeEvent.getActor(),
+													persistedChangeEvent.getOccurredAt(),
+													type,
+													persistedChangeEvent));
+							notificationRecipientFanoutService.recordRecipientsFor(saved);
+						});
 	}
 }

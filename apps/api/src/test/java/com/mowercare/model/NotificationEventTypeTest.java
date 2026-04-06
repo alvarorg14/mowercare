@@ -30,4 +30,13 @@ class NotificationEventTypeTest {
 		assertThat(NotificationEventType.ISSUE_ASSIGNED.taxonomyValue()).isEqualTo("issue.assigned");
 		assertThat(NotificationEventType.ISSUE_STATUS_CHANGED.taxonomyValue()).isEqualTo("issue.status_changed");
 	}
+
+	@Test
+	void fromTaxonomyValue_roundTripsPersistedStrings() {
+		assertThat(NotificationEventType.fromTaxonomyValue("issue.created")).contains(NotificationEventType.ISSUE_CREATED);
+		assertThat(NotificationEventType.fromTaxonomyValue("issue.assigned")).contains(NotificationEventType.ISSUE_ASSIGNED);
+		assertThat(NotificationEventType.fromTaxonomyValue("issue.status_changed"))
+				.contains(NotificationEventType.ISSUE_STATUS_CHANGED);
+		assertThat(NotificationEventType.fromTaxonomyValue("unknown")).isEmpty();
+	}
 }

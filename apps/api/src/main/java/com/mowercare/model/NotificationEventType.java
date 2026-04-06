@@ -35,4 +35,17 @@ public enum NotificationEventType {
 			default -> Optional.empty();
 		};
 	}
+
+	/** Resolves persisted {@code notification_events.event_type} back to this enum. */
+	public static Optional<NotificationEventType> fromTaxonomyValue(String taxonomyValue) {
+		if (taxonomyValue == null || taxonomyValue.isBlank()) {
+			return Optional.empty();
+		}
+		for (NotificationEventType t : values()) {
+			if (t.taxonomyValue().equals(taxonomyValue)) {
+				return Optional.of(t);
+			}
+		}
+		return Optional.empty();
+	}
 }

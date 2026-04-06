@@ -1,0 +1,75 @@
+# notification_recipients: per-user fan-out for FR21 (Story 4.2). Parent notification_events CASCADE deletes children.
+databaseChangeLog:
+  - changeSet:
+      id: "0011-notification-recipients"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - createTable:
+            tableName: notification_recipients
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: organization_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notification_event_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recipient_user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            constraintName: uq_notification_recipients_event_user
+            tableName: notification_recipients
+            columnNames: notification_event_id, recipient_user_id
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_recipients_organization
+            baseTableName: notification_recipients
+            baseColumnNames: organization_id
+            referencedTableName: organizations
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_recipients_notification_event
+            baseTableName: notification_recipients
+            baseColumnNames: notification_event_id
+            referencedTableName: notification_events
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_recipients_recipient_user
+            baseTableName: notification_recipients
+            baseColumnNames: recipient_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - createIndex:
+            indexName: idx_notification_recipients_org_recipient_created
+            tableName: notification_recipients
+            columns:
+              - column:
+                  name: organization_id
+              - column:
+                  name: recipient_user_id
+              - column:
+                  name: created_at
+                  descending: true
+      rollback:
+        - dropTable:
+            tableName: notification_recipients
