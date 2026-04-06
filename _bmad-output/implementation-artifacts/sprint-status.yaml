@@ -1,5 +1,5 @@
 # generated: 2026-03-27T12:00:00Z
-# last_updated: 2026-04-06T22:00:00Z
+# last_updated: 2026-04-06T23:59:00Z
 # project: mowercare
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-03-27T12:00:00Z"
-last_updated: "2026-04-06T22:00:00Z"
+last_updated: "2026-04-06T23:59:00Z"
 project: mowercare
 project_key: NOKEY
 tracking_system: file-system
@@ -77,7 +77,7 @@ development_status:
   epic-4: in-progress
   4-1-notification-records-and-issue-event-taxonomy: done
   4-2-notification-delivery-rules-by-role: done
-  4-3-in-app-notification-list-rest-and-ui: backlog
+  4-3-in-app-notification-list-rest-and-ui: done
   4-4-device-registration-and-push-delivery: backlog
   4-5-deep-link-from-push-to-issue-detail: backlog
   epic-4-retrospective: optional

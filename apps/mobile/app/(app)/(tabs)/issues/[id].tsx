@@ -17,15 +17,15 @@ import {
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getAccessToken, getSessionOrganizationId } from '../../../lib/auth/session';
-import { getIssue, patchIssue, type IssueDetail, type IssueUpdatePayload } from '../../../lib/issue-api';
-import { issuePriorities, issueStatuses } from '../../../lib/issue-create-schema';
-import { ApiProblemError } from '../../../lib/http';
-import { getSubjectFromAccessToken } from '../../../lib/jwt-org';
-import { formatRelativeTimeUtc } from '../../../lib/relative-time';
-import { issueStatusTokens } from '../../../lib/theme';
-import { AssigneePicker } from '../../../components/AssigneePicker';
-import { IssueActivityTimeline } from '../../../components/IssueActivityTimeline';
+import { getAccessToken, getSessionOrganizationId } from '../../../../lib/auth/session';
+import { getIssue, patchIssue, type IssueDetail, type IssueUpdatePayload } from '../../../../lib/issue-api';
+import { issuePriorities, issueStatuses } from '../../../../lib/issue-create-schema';
+import { ApiProblemError } from '../../../../lib/http';
+import { getSubjectFromAccessToken } from '../../../../lib/jwt-org';
+import { formatRelativeTimeUtc } from '../../../../lib/relative-time';
+import { issueStatusTokens } from '../../../../lib/theme';
+import { AssigneePicker } from '../../../../components/AssigneePicker';
+import { IssueActivityTimeline } from '../../../../components/IssueActivityTimeline';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

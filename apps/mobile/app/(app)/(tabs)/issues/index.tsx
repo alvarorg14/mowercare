@@ -25,17 +25,17 @@ import {
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { IssueRow } from '../../../components/IssueRow';
-import { getSessionOrganizationId } from '../../../lib/auth/session';
+import { IssueRow } from '../../../../components/IssueRow';
+import { getSessionOrganizationId } from '../../../../lib/auth/session';
 import {
   defaultIssueListParams,
   listIssues,
   type IssueListParams,
   type IssueListScope,
   type IssueListSortField,
-} from '../../../lib/issue-api';
-import { issuePriorities, issueStatuses } from '../../../lib/issue-create-schema';
-import { ApiProblemError } from '../../../lib/http';
+} from '../../../../lib/issue-api';
+import { issuePriorities, issueStatuses } from '../../../../lib/issue-create-schema';
+import { ApiProblemError } from '../../../../lib/http';
 
 function errorMessage(err: unknown): string {
   if (err instanceof ApiProblemError) return err.detail ?? err.title ?? 'Request failed';

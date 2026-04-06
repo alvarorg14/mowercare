@@ -81,3 +81,7 @@ MVP acceptable per story scope.
 ## Deferred from: code review of 4-2-notification-delivery-rules-by-role.md (2026-04-06)
 
 - **No failure-injected integration test for transactional fan-out (AC3):** `NotificationEventRecorder` + fan-out share the issue transaction; rollback behavior on persistence failure is not proven by tests — acceptable unless product requires explicit regression harness.
+
+## Deferred from: code review of 4-3-in-app-notification-list-rest-and-ui.md (2026-04-06)
+
+- **Notification list first page only in mobile:** The screen always requests `page=0` and `size=50`; additional pages are not loaded. Acceptable for MVP; add infinite scroll or “load more” when backlog warrants.

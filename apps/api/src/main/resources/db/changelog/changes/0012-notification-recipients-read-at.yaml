@@ -1,0 +1,19 @@
+# Story 4.3: read/unread for in-app notification list (FR22).
+databaseChangeLog:
+  - changeSet:
+      id: "0012-notification-recipients-read-at"
+      author: mowercare
+      dbms: postgresql
+      changes:
+        - addColumn:
+            tableName: notification_recipients
+            columns:
+              - column:
+                  name: read_at
+                  type: timestamptz
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: notification_recipients
+            columnName: read_at

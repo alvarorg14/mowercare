@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, List, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getSessionRole } from '../../lib/auth/session';
+import { getSessionRole } from '../../../lib/auth/session';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -19,7 +19,6 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <Appbar.Header mode="center-aligned">
-        <Appbar.BackAction onPress={() => router.back()} accessibilityLabel="Go back" />
         <Appbar.Content title="Settings" />
       </Appbar.Header>
 

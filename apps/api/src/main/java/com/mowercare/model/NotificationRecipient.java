@@ -16,6 +16,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -50,10 +51,28 @@ public class NotificationRecipient {
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
+	/** When non-null, the recipient has seen this notification in-app (Story 4.3). */
+	@Column(name = "read_at")
+	@Setter
+	private Instant readAt;
+
 	public NotificationRecipient(
 			Organization organization, NotificationEvent notificationEvent, User recipient) {
 		this.organization = organization;
 		this.notificationEvent = notificationEvent;
 		this.recipient = recipient;
+	}
+
+	public boolean isRead() {
+		return readAt != null;
+	}
+
+	/**
+	 * Marks as read if not already (idempotent).
+	 */
+	public void markRead(Instant at) {
+		if (this.readAt == null) {
+			this.readAt = at;
+		}
 	}
 }

@@ -21,9 +21,9 @@ import {
   issuePriorities,
   issueStatuses,
   type IssueCreateFormValues,
-} from '../../../lib/issue-create-schema';
-import { createIssue } from '../../../lib/issue-api';
-import { ApiProblemError } from '../../../lib/http';
+} from '../../../../lib/issue-create-schema';
+import { createIssue } from '../../../../lib/issue-api';
+import { ApiProblemError } from '../../../../lib/http';
 
 function problemMessage(err: unknown): string {
   if (err instanceof ApiProblemError) {
