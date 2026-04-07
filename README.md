@@ -60,6 +60,8 @@ Use the Expo CLI prompts to open iOS simulator, Android emulator, or web. The ap
 
 ## Testing
 
+**Overview (commands, CI vs local, prerequisites, coverage policy):** [`docs/testing.md`](docs/testing.md)
+
 | Doc | Scope |
 |-----|--------|
 | [`docs/testing-backend.md`](docs/testing-backend.md) | API: `mvn verify`, Testcontainers, integration tests |
@@ -68,9 +70,9 @@ Use the Expo CLI prompts to open iOS simulator, Android emulator, or web. The ap
 
 ## CI
 
-Pull requests run:
+Pull requests run [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 
-- **API:** `mvn -B verify` under JDK 25 (includes tests using Testcontainers and PostgreSQL).
-- **Mobile:** `npm ci`, `npm run lint`, `npm run typecheck`, and `npm test -- --ci`.
+- **API — verify:** JDK 25, install Maven 3.9.9, then `mvn -B verify` in `apps/api` (unit + integration with Testcontainers PostgreSQL).
+- **Mobile:** `npm ci`, `npm run lint`, `npm run typecheck`, `npm test -- --ci` with an **informational** Jest coverage summary, then `npm run check:contrast`.
 
 Maestro E2E is **not** part of the default PR workflow; see [`docs/testing-e2e.md`](docs/testing-e2e.md) for why and for local runs.

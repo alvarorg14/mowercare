@@ -55,7 +55,7 @@ Prerequisites: Node 20+ (aligned with CI). No Android/iOS simulator required for
 ## Risk hotspots / follow-ups
 
 - **Full-screen RTL** for connected components: add `QueryClientProvider` + Paper theme when you need regression tests on full trees.
-- **Coverage thresholds:** Optional; Story 5.6 may add informational coverage reporting.
+- **Coverage:** CI runs Jest with an informational **text summary** only — no minimum gate. Policy: [`testing.md`](testing.md#coverage-policy-epic-5).
 
 ## Aligning Zod with the API
 

@@ -2,7 +2,7 @@
 
 Commands:
 
-- Unit + integration: `cd apps/api && ./mvnw -B verify` (or `mvn -B verify` if Maven is on `PATH`).
+- Unit + integration: `cd apps/api && mvn -B verify` (Maven on `PATH`; this repo does not ship `./mvnw`).
 - CI: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs `mvn -B verify` on Ubuntu with Docker (Testcontainers PostgreSQL).
 
 **Prerequisites:** JDK **25**, **Docker** for integration tests (PostgreSQL 16 via Testcontainers).

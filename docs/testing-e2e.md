@@ -78,10 +78,10 @@ Automating **FCM/APNs** or **tap-to-open from push** is **out of scope** for def
 
 ### Default pull requests
 
-PR CI **does not** run Maestro. It runs:
+PR CI **does not** run Maestro. It runs (see [`testing.md`](testing.md)):
 
 - **API:** `mvn -B verify` (Testcontainers PostgreSQL) — see [`testing-backend.md`](testing-backend.md)
-- **Mobile:** `npm ci`, lint, typecheck, `npm test -- --ci` — see [`testing-mobile.md`](testing-mobile.md)
+- **Mobile:** `npm ci`, lint, typecheck, Jest with informational coverage summary, `npm run check:contrast` — see [`testing-mobile.md`](testing-mobile.md)
 
 That gives **fast** feedback and **API contract / domain** regression without emulators.
 
@@ -97,6 +97,6 @@ If you add a CI job later, consider caching the Android SDK, using **`workflow_d
 |-------|----------------|------|
 | Maestro | Local / optional job | Smoke UI journeys |
 | `mvn verify` | Every PR | Tenant, auth, issues, notifications HTTP paths |
-| Jest | Every PR | Mobile units and mocks |
+| Jest + contrast | Every PR | Mobile units, mocks, theme contrast script |
 
 No silent gap: UI smoke is **documented here**; API regression is **always** on PR.

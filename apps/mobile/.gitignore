@@ -36,6 +36,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Jest coverage output (CI runs informational `--coverage`)
+coverage/
+
 # generated native folders
 /ios
 /android
