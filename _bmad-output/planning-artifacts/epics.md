@@ -3,12 +3,14 @@ stepsCompleted:
   - step-01-validate-prerequisites
   - step-02-design-epics
   - step-03-create-stories
+  - epic-5-post-mvp-quality-addendum-2026-04-06
 inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/planning-artifacts/ux-design-specification.md"
 document_output_language: English
 workflowStatus: step-04-validation-complete
+epic5Note: "Post-MVP epic; FR1–FR29 unchanged — Epic 5 strengthens NFRs, testability, maintainability, and UX polish. Additional stories may be appended here and in sprint-status.yaml over time."
 ---
 
 # mowercare - Epic Breakdown
@@ -173,6 +175,16 @@ FR28: Epic 1 — Core flows without payment/billing in MVP
 
 FR29: Epic 1 — Core flows without third-party integrations in MVP
 
+### Post-MVP quality themes (Epic 5)
+
+Epic 5 does not introduce new PRD functional requirements; it **raises the quality bar** on existing capability. Map themes to stories as follows (illustrative; see Epic 5 stories for authoritative ACs):
+
+| Theme | Primary NFR / basis | Epic 5 stories |
+|-------|---------------------|----------------|
+| Automated regression & confidence | NFR-R3, NFR-S3 (verification), NFR-P1/P2 (non-regression) | 5.1, 5.2, 5.3, 5.6 |
+| Maintainable codebase | NFR-SC1 (evolvability), observability / clarity from Architecture | 5.4 |
+| Contemporary UX | NFR-A1, UX-DR1 (theme and surfaces) | 5.5 |
+
 ## Epic List
 
 ### Epic 1: Bootstrap, tenancy & authentication
@@ -215,7 +227,19 @@ FR29: Epic 1 — Core flows without third-party integrations in MVP
 
 ---
 
-**Cross-cutting:** NFRs (performance targets, uptime SLA numerics, scalability testing) are verified across epics via acceptance criteria and non-functional checks where applicable. **RBAC matrix**, **notification taxonomy**, and **refresh token** details are specified in stories within Epic 2–4 as appropriate.
+### Epic 5: Post-MVP quality, maintainability & UX polish
+
+**Goal:** After MVP delivery (Epics 1–4), **deepen test coverage**, **align backend code with domain boundaries**, **modernize the mobile UI** toward current patterns, and optionally **tighten CI and documentation** — so the product stays **safe to change**, **pleasant to use**, and **cheap to extend**. This epic is **open-ended**: you may **add more stories** to `epics.md` and regenerate `sprint-status.yaml` without renumbering completed MVP work.
+
+**FRs covered:** None new (MVP FRs remain satisfied by Epics 1–4). **Quality / NFR alignment:** NFR-S3, NFR-R3, NFR-P1/P2, NFR-A1, NFR-SC1; UX-DR1 and related presentation standards where applicable.
+
+**Primary NFR / UX touchpoints:** Test automation and integration tests (API and mobile), E2E where feasible, package clarity for reviewers, refreshed MD3 / 2026-adjacent mobile styling without breaking accessibility baselines from Epic 3.
+
+**Suggested additional topics** (add as future stories when prioritized): dependency and security update cadence (Dependabot, audit pipeline), performance baselines / profiling on reference devices, expanded accessibility audit beyond MVP baseline, OpenAPI contract tests, load or soak tests for peak issue volume (NFR-SC2).
+
+---
+
+**Cross-cutting:** NFRs (performance targets, uptime SLA numerics, scalability testing) are verified across epics via acceptance criteria and non-functional checks where applicable. **RBAC matrix**, **notification taxonomy**, and **refresh token** details are specified in stories within Epic 2–4 as appropriate. **Epic 5** strengthens ongoing verification and maintainability **after** MVP scope is met.
 
 ## Epic 1: Bootstrap, tenancy & authentication — stories
 
@@ -798,6 +822,152 @@ So that **I can respond quickly (UX-DR11)**.
 
 ---
 
+## Epic 5: Post-MVP quality, maintainability & UX polish — stories
+
+### Story 5.1: Backend unit and integration test expansion
+
+As a **developer**,
+I want **broader JUnit coverage and integration tests (e.g. Testcontainers) for critical API and domain paths**,
+So that **refactors and new work do not regress tenant isolation, auth, issues, or notifications (NFR-S3, NFR-R3)**.
+
+**Implements:** NFR-S3 (verification); NFR-R3; Additional: Spring Boot testing idioms, no secrets in test logs.
+
+**Acceptance Criteria:**
+
+**Given** the API module  
+**When** unit tests run (`./mvnw test` or project-standard command)  
+**Then** critical services and security paths (org scope, RBAC, issue mutations, notification dispatch hooks) have **meaningful** unit coverage; gaps are documented in code comments or a short `docs/` note if intentionally deferred
+
+**Given** integration tests with PostgreSQL (Testcontainers or CI-provided DB)  
+**When** the integration suite runs  
+**Then** representative flows prove **cross-tenant denial**, auth on protected routes, and at least one **end-to-end API path** each for issues and notifications per existing OpenAPI contracts
+
+**Given** CI  
+**When** a pull request is opened  
+**Then** backend test job remains green and failures are actionable (no flaky sleeps without justification)
+
+---
+
+### Story 5.2: Frontend unit test expansion
+
+As a **developer**,
+I want **more unit and component tests on the mobile app (hooks, navigation helpers, form validation, critical UI)**,
+So that **UI refactors stay safe and regressions are caught early (NFR-P2 honest states)**.
+
+**Implements:** NFR-P2 (predictable UI behavior); UX-DR6, UX-DR9 (error and mutation feedback patterns tested where applicable).
+
+**Acceptance Criteria:**
+
+**Given** the mobile package (e.g. `apps/mobile`)  
+**When** `npm test` / `yarn test` (or project-standard) runs in CI  
+**Then** tests exist for **high-value** units: auth/session helpers, issue list/detail behaviors that are pure or easily mocked, notification registration/deep-link parsing utilities, and Zod/schema validation aligned with OpenAPI
+
+**Given** new tests  
+**When** they run locally and in CI  
+**Then** they do not require manual device interaction; mocks for TanStack Query / Expo modules are stable and documented in one place if shared
+
+**Given** coverage  
+**When** reviewed  
+**Then** the team agrees the **next risk hotspots** are either covered or listed as follow-ups (optional: coverage report artifact in CI)
+
+---
+
+### Story 5.3: End-to-end tests for critical flows
+
+As a **team**,
+I want **automated E2E coverage of the main user journeys across API + mobile where feasible**,
+So that **releases catch broken flows that unit tests miss (NFR-P1 baseline)**.
+
+**Implements:** NFR-P1 (smoke-level confidence); cross-cutting validation of FR4–FR6, FR11–FR14, FR22–FR23 on a **smoke** subset.
+
+**Acceptance Criteria:**
+
+**Given** the monorepo  
+**When** E2E strategy is chosen and documented (e.g. Detox, Maestro, Appium, or API-only smoke plus mobile UI driver — **one** primary approach)  
+**Then** `docs/` or README describes how to run E2E locally and in CI, including required env (API URL, test org bootstrap or fixtures)
+
+**Given** the chosen toolchain  
+**When** the E2E suite runs  
+**Then** at minimum **one** path covers: sign-in → issues list → open issue detail; and **one** path covers notification list or push-related surface **if** runnable without Apple/Google secrets in CI (otherwise document manual/device lab gap)
+
+**Given** CI constraints  
+**When** full device E2E is not available in GitHub Actions  
+**Then** the story documents the fallback (e.g. scheduled job, local-only target, or API contract smoke) and the team accepts the trade-off explicitly
+
+---
+
+### Story 5.4: Backend domain-aligned package structure
+
+As a **developer**,
+I want **packages under existing roots (e.g. `model`, `service`, `web`) grouped by domain such as `issue`, `notification`, `organization`**,
+So that **navigation and reviews stay easy as the codebase grows (NFR-SC1)**.
+
+**Implements:** NFR-SC1; Additional: Architecture package conventions — **move-only** refactor with no behavior change unless fixing a discovered bug (out of scope unless trivial).
+
+**Acceptance Criteria:**
+
+**Given** `apps/api` source  
+**When** packages are reorganized by domain  
+**Then** **no intentional API or JSON contract changes**; OpenAPI and mobile clients work unchanged
+
+**Given** moved types  
+**When** the application builds and all tests pass  
+**Then** import cycles are avoided or documented; each domain folder has a clear responsibility (entities, services, controllers as already structured by Spring conventions)
+
+**Given** Liquibase and runtime  
+**When** migrations and app start are exercised  
+**Then** schema and runtime behavior match pre-refactor baseline (integration or smoke test proves startup)
+
+---
+
+### Story 5.5: Mobile UI modernization (2026-ready patterns)
+
+As an **employee**,
+I want **a fresher, more contemporary visual and interaction baseline (spacing, typography, surfaces, motion where appropriate)**,
+So that **the app feels current and professional without sacrificing usability (NFR-A1)**.
+
+**Implements:** NFR-A1; UX-DR1 (single MD3 theme object — **evolve** tokens, not duplicate themes); UX-DR14–DR15 baselines **maintained or improved**.
+
+**Acceptance Criteria:**
+
+**Given** the app shell and core screens (Issues, Notifications, Settings, auth)  
+**When** theme tokens are updated (colors, elevation, shape, motion)  
+**Then** **one** canonical Paper/MD3 theme remains the source of truth; dark mode remains **optional** unless explicitly in scope for this story
+
+**Given** primary flows  
+**When** reviewed on a reference device  
+**Then** touch targets and contrast **do not regress** below Epic 3 Story 3.9 baselines; icon-only controls retain `accessibilityLabel`
+
+**Given** rollout risk  
+**When** changes are large  
+**Then** introduce a **feature flag or phased rollout** is documented OR changes are split into follow-up stories in Epic 5
+
+---
+
+### Story 5.6: CI quality signals and developer test documentation
+
+As a **developer**,
+I want **clear CI jobs and documentation for how tests map to quality (and optional non-blocking coverage reporting)**,
+So that **contributors know what to run before PRs and CI failures are interpretable**.
+
+**Implements:** NFR-S3 (ongoing verification); Additional: repo hygiene.
+
+**Acceptance Criteria:**
+
+**Given** GitHub Actions (or project CI)  
+**When** a PR runs  
+**Then** backend unit/integration, mobile unit, and lint/typecheck jobs are **named consistently** and link to logs that identify the failing step
+
+**Given** documentation  
+**When** a new contributor opens README or `docs/testing.md`  
+**Then** they find commands for unit, integration, and E2E (if any), plus prerequisites (Java, Node, Docker for Testcontainers)
+
+**Given** optional coverage thresholds  
+**When** enabled  
+**Then** thresholds are **incremental** (not blocking the first merge of Epic 5) or reported as informational only — document the policy
+
+---
+
 ### UX Design Requirements coverage (verify in development)
 
 | UX-DR | Where addressed |
@@ -816,6 +986,8 @@ So that **I can respond quickly (UX-DR11)**.
 | UX-DR16 | Story 4.4 |
 | UX-DR17 | Story 2.5 |
 | UX-DR18 | Story 3.4 |
+
+**Epic 5 (post-MVP):** Stories **5.2** and **5.5** intentionally **revisit** UX-DR1, UX-DR6, UX-DR9, UX-DR14, and UX-DR15 to deepen tests and refresh presentation without lowering the MVP accessibility bar.
 
 ## Final validation (Step 4)
 
@@ -855,6 +1027,12 @@ So that **I can respond quickly (UX-DR11)**.
 - Table **UX Design Requirements coverage** maps **UX-DR1–UX-DR18** to stories — **complete**.
 
 **Overall:** **READY FOR DEVELOPMENT** — pending your confirmation below.
+
+### Epic 5 addendum (2026-04-06)
+
+- **Scope:** Epic 5 is **additive post-MVP**; FR1–FR29 coverage above is unchanged.
+- **Story order:** Stories **5.1–5.6** are **sequentially independent** — each can ship without waiting for a later 5.x; choose implementation order by risk (e.g. 5.4 before heavy new tests if package moves would otherwise churn tests twice).
+- **Open epic:** Additional maintenance stories may be appended after **5.6** with the next available **5.x** number; run **sprint planning** to sync `sprint-status.yaml`.
 
 ---
 

@@ -90,3 +90,9 @@ MVP acceptable per story scope.
 
 - **EAS / store builds: confirm push entitlements and Android channels (AC8):** Plugin-only `app.config.ts` change may be enough for dev client; validate on first EAS iOS/Android release that entitlements and channels match Expo 55 docs.
 - **Push runs inside same DB transaction as recipient insert:** `NotificationRecipientFanoutService` calls `dispatchForNewRecipient` before commit; slow or flaky FCM prolongs the transaction. Acceptable for MVP; revisit async/after-commit if latency or timeouts appear.
+
+## Deferred from: code review of 5-1-backend-unit-and-integration-test-expansion.md (2026-04-07)
+
+- **Sprint/planning artifact bundling:** Epic 4 retrospective, large `epics.md` addendum, and Story 5.1 test files landed in one working tree — noisier review and history; prefer smaller commits or stacked PRs next time.
+- **Epic 4 retro narrative vs current roadmap:** `epic-4-retro-2026-04-06.md` reflects “no Epic 5 in epics.md” at retro time; Epic 5 was added afterward — historical snapshot is fine; add a short superseded-context note only if readers are confused.
+- **DataIntegrityViolations nested causes:** Unit tests cover direct `ConstraintViolationException` causes; deeply wrapped JDBC causes are not exercised — revisit only if logs show missed duplicate-email mapping.
