@@ -16,10 +16,10 @@ Commands:
 
 | Requirement | Covered by (existing `*IT`) |
 |-------------|------------------------------|
-| Cross-tenant denial | [`TenantScopeIT`](../apps/api/src/test/java/com/mowercare/controller/TenantScopeIT.java) |
-| Auth on protected routes | [`AuthIT`](../apps/api/src/test/java/com/mowercare/controller/AuthIT.java), [`RbacEnforcementIT`](../apps/api/src/test/java/com/mowercare/controller/RbacEnforcementIT.java) |
-| Issues HTTP path + OpenAPI alignment | [`IssueCreateIT`](../apps/api/src/test/java/com/mowercare/controller/IssueCreateIT.java), [`IssueListIT`](../apps/api/src/test/java/com/mowercare/controller/IssueListIT.java), [`IssuePatchIT`](../apps/api/src/test/java/com/mowercare/controller/IssuePatchIT.java), [`IssueDetailIT`](../apps/api/src/test/java/com/mowercare/controller/IssueDetailIT.java) |
-| Notifications HTTP path | [`NotificationInboxIT`](../apps/api/src/test/java/com/mowercare/controller/NotificationInboxIT.java) |
+| Cross-tenant denial | [`TenantScopeIT`](../apps/api/src/test/java/com/mowercare/organization/TenantScopeIT.java) |
+| Auth on protected routes | [`AuthIT`](../apps/api/src/test/java/com/mowercare/auth/AuthIT.java), [`RbacEnforcementIT`](../apps/api/src/test/java/com/mowercare/user/RbacEnforcementIT.java) |
+| Issues HTTP path + OpenAPI alignment | [`IssueCreateIT`](../apps/api/src/test/java/com/mowercare/issue/IssueCreateIT.java), [`IssueListIT`](../apps/api/src/test/java/com/mowercare/issue/IssueListIT.java), [`IssuePatchIT`](../apps/api/src/test/java/com/mowercare/issue/IssuePatchIT.java), [`IssueDetailIT`](../apps/api/src/test/java/com/mowercare/issue/IssueDetailIT.java) |
+| Notifications HTTP path | [`NotificationInboxIT`](../apps/api/src/test/java/com/mowercare/notification/NotificationInboxIT.java) |
 
 Push delivery does not call real FCM in tests: [`NoOpPushNotificationSenderConfig`](../apps/api/src/test/java/com/mowercare/testsupport/NoOpPushNotificationSenderConfig.java).
 
@@ -31,7 +31,7 @@ These types are **data-only**, **Spring Data interfaces**, **simple exception co
 |----------|--------|
 | Application entry | `ApiApplication` |
 | Spring Data repositories | `DevicePushTokenRepository`, `IssueChangeEventRepository`, `IssueRepository`, `NotificationEventRepository`, `NotificationRecipientRepository`, `OrganizationRepository`, `RefreshTokenRepository`, `UserRepository` |
-| DTOs / request / response records | All under `model.request.*`, `model.response.*` (records with validation only where applicable — validation is exercised via controller tests) |
+| DTOs / request / response records | Per-domain `*.request` / `*.response` packages (e.g. `issue.request`, `auth.response`; records with validation only where applicable — validation is exercised via controller tests) |
 | JPA entities | `DevicePushToken`, `Issue`, `IssueChangeEvent`, `NotificationEvent`, `NotificationRecipient`, `Organization`, `RefreshToken`, `User` |
 | Simple enums (no custom behavior tests required here) | `AccountStatus`, `DevicePushPlatform`, `IssueChangeType`, `IssueListScope`, `IssuePriority`, `IssueStatus`, `UserRole` |
 | Exception types (constructors / getters only) | `BootstrapAlreadyCompletedException`, `EmptyIssuePatchException`, `ForbiddenRoleException`, `InvalidAccessTokenClaimsException`, `InvalidBootstrapTokenException`, `InvalidCredentialsException`, `InvalidIssueListQueryException`, `InvalidIssuePatchException`, `InvalidRefreshTokenException`, `InvalidScopeException`, `InvalidStatusTransitionException`, `InviteTokenInvalidException`, `IssueClosedException`, `LastAdminDeactivationException`, `LastAdminRemovalException`, `ResourceNotFoundException`, `TenantAccessDeniedException`, `UserDeactivatedManagementException`, `UserEmailConflictException` |

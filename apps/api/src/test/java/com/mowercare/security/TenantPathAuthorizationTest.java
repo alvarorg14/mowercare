@@ -9,8 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import com.mowercare.exception.InvalidAccessTokenClaimsException;
-import com.mowercare.exception.TenantAccessDeniedException;
+import com.mowercare.auth.InvalidAccessTokenClaimsException;
+import com.mowercare.common.exception.TenantAccessDeniedException;
 
 class TenantPathAuthorizationTest {
 

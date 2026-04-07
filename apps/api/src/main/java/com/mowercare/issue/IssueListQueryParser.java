@@ -3,10 +3,6 @@ package com.mowercare.issue;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mowercare.exception.InvalidIssueListQueryException;
-import com.mowercare.model.IssuePriority;
-import com.mowercare.model.IssueStatus;
-
 /**
  * Parses optional issue list query parameters. {@code status} and {@code priority} use repeated
  * params with enum names matching JSON ({@code OPEN}, {@code LOW}, …). Blank tokens are skipped.

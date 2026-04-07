@@ -2,9 +2,9 @@ package com.mowercare.security;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import com.mowercare.exception.ForbiddenRoleException;
-import com.mowercare.exception.InvalidAccessTokenClaimsException;
-import com.mowercare.model.UserRole;
+import com.mowercare.user.ForbiddenRoleException;
+import com.mowercare.auth.InvalidAccessTokenClaimsException;
+import com.mowercare.user.UserRole;
 
 /**
  * Role checks for JWTs issued by this API ({@code role} claim matches {@link UserRole#name()}).

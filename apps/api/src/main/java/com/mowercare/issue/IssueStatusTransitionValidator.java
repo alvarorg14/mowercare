@@ -1,7 +1,7 @@
 package com.mowercare.issue;
 
-import com.mowercare.exception.InvalidStatusTransitionException;
-import com.mowercare.model.IssueStatus;
+import com.mowercare.issue.InvalidStatusTransitionException;
+import com.mowercare.issue.IssueStatus;
 
 /**
  * MVP rules: CLOSED is terminal — no transition to another status. All other transitions are

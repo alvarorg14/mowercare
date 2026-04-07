@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mowercare.exception.ApiProblemBodies;
-import com.mowercare.model.AccountStatus;
-import com.mowercare.model.User;
-import com.mowercare.repository.UserRepository;
+import com.mowercare.common.exception.ApiProblemBodies;
+import com.mowercare.user.AccountStatus;
+import com.mowercare.user.User;
+import com.mowercare.user.UserRepository;
 
 /**
  * Blocks protected API access when the authenticated user is {@link AccountStatus#DEACTIVATED}.

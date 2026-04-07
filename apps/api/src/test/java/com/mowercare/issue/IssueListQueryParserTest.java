@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.mowercare.exception.InvalidIssueListQueryException;
+import com.mowercare.issue.InvalidIssueListQueryException;
 import com.mowercare.issue.IssueListQueryParser.IssueListFilters;
-import com.mowercare.model.IssuePriority;
-import com.mowercare.model.IssueStatus;
+import com.mowercare.issue.IssuePriority;
+import com.mowercare.issue.IssueStatus;
 
 class IssueListQueryParserTest {
 

@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-import com.mowercare.exception.InvalidStatusTransitionException;
-import com.mowercare.model.IssueStatus;
+import com.mowercare.issue.InvalidStatusTransitionException;
+import com.mowercare.issue.IssueStatus;
 
 class IssueStatusTransitionValidatorTest {
 

@@ -18,7 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Maps OAuth2 resource server authentication failures to RFC 7807 Problem Details with stable {@code code}
- * values ({@code AUTH_REQUIRED}, {@code AUTH_INVALID_TOKEN}), consistent with {@link com.mowercare.exception.ApiExceptionHandler}.
+ * values ({@code AUTH_REQUIRED}, {@code AUTH_INVALID_TOKEN}), consistent with {@link com.mowercare.common.exception.ApiExceptionHandler}.
  * Response JSON is built as a {@link Map} so {@code code} is a top-level field (aligned with MVC {@code ProblemDetail} serialization).
  */
 @Component

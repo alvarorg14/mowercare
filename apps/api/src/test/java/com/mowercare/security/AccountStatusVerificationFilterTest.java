@@ -28,9 +28,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mowercare.model.AccountStatus;
-import com.mowercare.model.User;
-import com.mowercare.repository.UserRepository;
+import com.mowercare.user.AccountStatus;
+import com.mowercare.user.User;
+import com.mowercare.user.UserRepository;
 
 import jakarta.servlet.ServletException;
 

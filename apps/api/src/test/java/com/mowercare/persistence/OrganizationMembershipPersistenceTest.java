@@ -13,11 +13,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.mowercare.model.Organization;
-import com.mowercare.model.User;
-import com.mowercare.model.UserRole;
-import com.mowercare.repository.OrganizationRepository;
-import com.mowercare.repository.UserRepository;
+import com.mowercare.organization.Organization;
+import com.mowercare.user.User;
+import com.mowercare.user.UserRole;
+import com.mowercare.organization.OrganizationRepository;
+import com.mowercare.user.UserRepository;
 import com.mowercare.testsupport.AbstractPostgresIntegrationTest;
 
 import jakarta.persistence.EntityManager;

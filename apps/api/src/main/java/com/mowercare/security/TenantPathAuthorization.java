@@ -4,8 +4,8 @@ import java.util.UUID;
 
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import com.mowercare.exception.InvalidAccessTokenClaimsException;
-import com.mowercare.exception.TenantAccessDeniedException;
+import com.mowercare.auth.InvalidAccessTokenClaimsException;
+import com.mowercare.common.exception.TenantAccessDeniedException;
 
 /**
  * Validates that the {@code organizationId} path segment matches the JWT {@code organizationId} claim.

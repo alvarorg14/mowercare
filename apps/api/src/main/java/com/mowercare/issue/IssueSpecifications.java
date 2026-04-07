@@ -6,10 +6,10 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
 
-import com.mowercare.model.Issue;
-import com.mowercare.model.IssueListScope;
-import com.mowercare.model.IssuePriority;
-import com.mowercare.model.IssueStatus;
+import com.mowercare.issue.Issue;
+import com.mowercare.issue.IssueListScope;
+import com.mowercare.issue.IssuePriority;
+import com.mowercare.issue.IssueStatus;
 
 public final class IssueSpecifications {
 

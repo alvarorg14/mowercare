@@ -96,3 +96,14 @@ MVP acceptable per story scope.
 - **Sprint/planning artifact bundling:** Epic 4 retrospective, large `epics.md` addendum, and Story 5.1 test files landed in one working tree — noisier review and history; prefer smaller commits or stacked PRs next time.
 - **Epic 4 retro narrative vs current roadmap:** `epic-4-retro-2026-04-06.md` reflects “no Epic 5 in epics.md” at retro time; Epic 5 was added afterward — historical snapshot is fine; add a short superseded-context note only if readers are confused.
 - **DataIntegrityViolations nested causes:** Unit tests cover direct `ConstraintViolationException` causes; deeply wrapped JDBC causes are not exercised — revisit only if logs show missed duplicate-email mapping.
+
+## Deferred from: code review of 5-4-backend-domain-aligned-package-structure.md (2026-04-07)
+
+- **`InvalidScopeException` Javadoc vs `common.exception`:** Class docs still read issue-list-specific; rename or clarify if “common” package is misleading.
+- **Cross-domain edges post-move:** `issue` ↔ `notification` and `user` ↔ `auth` imports are visible; acceptable if build passes — document if cycle analysis becomes a concern.
+- **`AuthController` + `user.request` DTOs:** Invite accept body types live under `user` while other auth bodies stay under `auth`; pre-existing split.
+- **`ApiExceptionHandlerTest` breadth:** Handler imports many domain exceptions; tests may not cover every mapping — expand if coverage gaps matter.
+- **`docs/testing-backend.md` exception list:** Unqualified class names after exceptions moved — qualify packages when docs confuse onboarding.
+- **`LastAdmin*` git history:** Delete+add hunks vs pure rename hurt blame; no runtime impact.
+- **Stale `@link` / old package strings:** Grep for `com.mowercare.model` and legacy paths in Javadoc and strings after large moves.
+- **Reflection / non-diff references:** Low risk; investigate if startup or tests fail with class-not-found.
