@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Banner, Button, Text, useTheme } from 'react-native-paper';
+import { Banner, Button, Surface, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NotificationRow } from '../../../../components/NotificationRow';
@@ -94,7 +94,10 @@ export default function NotificationsScreen() {
         </View>
       ) : showEmpty ? (
         <View style={styles.emptyWrap}>
-          <View style={styles.emptyCard}>
+          <Surface
+            style={[styles.emptyCard, { borderRadius: theme.roundness * 1.5 }]}
+            elevation={1}
+          >
             <Text variant="bodyLarge">No activity yet</Text>
             <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
               When teammates create or update issues you follow, entries appear here. Push can be added
@@ -103,7 +106,7 @@ export default function NotificationsScreen() {
             <Button mode="outlined" onPress={() => router.push('/issues')} style={styles.emptyBtn}>
               Go to Issues
             </Button>
-          </View>
+          </Surface>
         </View>
       ) : (
         <FlatList
@@ -125,7 +128,7 @@ const styles = StyleSheet.create({
   sub: { marginTop: 4 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyWrap: { flex: 1, padding: 24, justifyContent: 'center' },
-  emptyCard: { gap: 12 },
+  emptyCard: { gap: 12, padding: 20 },
   muted: { lineHeight: 22 },
   emptyBtn: { alignSelf: 'flex-start', marginTop: 8 },
 });

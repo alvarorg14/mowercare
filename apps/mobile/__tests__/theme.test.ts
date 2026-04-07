@@ -8,8 +8,9 @@ describe('theme', () => {
   });
 
   it('paperTheme overrides primary and surfaces', () => {
-    expect(paperTheme.colors.primary).toBe('#2E7D32');
-    expect(paperTheme.colors.surface).toBe('#FFFFFF');
-    expect(paperTheme.colors.onSurface).toBe('#1C1B1F');
+    expect(paperTheme.colors.primary).toBe('#1B5E20');
+    expect(paperTheme.colors.surface).toBe('#FFFBFF');
+    expect(paperTheme.colors.onSurface).toBe('#1A1C1A');
+    expect(paperTheme.roundness).toBe(12);
   });
 });

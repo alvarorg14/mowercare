@@ -1,27 +1,27 @@
 #!/usr/bin/env node
 /**
- * WCAG 2.1 contrast sanity check for issue-flow theme tokens (Story 3.9).
+ * WCAG 2.1 contrast sanity check for issue-flow theme tokens (Story 3.9; palette synced with `lib/theme.ts` Story 5.5).
  * Run: node scripts/check-issue-theme-contrast.mjs
  * Uses relative luminance for sRGB hex pairs — no extra dependencies.
  */
 
 const issueStatusTokens = {
-  open: '#2196F3',
-  inProgress: '#FF9800',
-  blocked: '#F57C00',
-  resolved: '#66BB6A',
+  open: '#1E88E5',
+  inProgress: '#FB8C00',
+  blocked: '#EF6C00',
+  resolved: '#43A047',
 };
 
 const surfaces = {
-  surface: '#FFFFFF',
-  background: '#F5F5F5',
+  surface: '#FFFBFF',
+  background: '#F2F5F2',
 };
 
 const theme = {
-  primary: '#2E7D32',
+  primary: '#1B5E20',
   onPrimary: '#FFFFFF',
-  onSurface: '#1C1B1F',
-  onSurfaceVariant: '#49454F',
+  onSurface: '#1A1C1A',
+  onSurfaceVariant: '#424943',
   error: '#B3261E',
 };
 
@@ -63,17 +63,23 @@ check('onSurfaceVariant on surface', theme.onSurfaceVariant, surfaces.surface, 4
 check('onPrimary on primary', theme.onPrimary, theme.primary, 4.5);
 check('error on surface (body)', theme.error, surfaces.surface, 4.5);
 
-console.log('\nIssue status chip text uses theme onSurface on tinted background (approximate chip fill = token 13% alpha on white)');
+/** IssueRow tints status chips with `token + '22'` (8-digit hex → alpha 34/255). */
+const CHIP_ALPHA = 34 / 255;
+console.log(
+  `\nIssue status chip text uses theme onSurface on tinted background (chip fill ≈ token ${CHIP_ALPHA.toFixed(3)} alpha on surface ${surfaces.surface})`,
+);
 for (const [k, hex] of Object.entries(issueStatusTokens)) {
-  const blended = mixWithWhite(hex, 0.13);
+  const blended = mixTokenOverSurface(hex, CHIP_ALPHA, surfaces.surface);
   check(`status token ${k} tint + onSurface`, theme.onSurface, blended, 4.5);
 }
 
-function mixWithWhite(hex, a) {
+/** Alpha-composite `hex` over `baseHex` (same model as token + '22' over list surface). */
+function mixTokenOverSurface(hex, a, baseHex) {
   const { r, g, b } = hexToRgb(hex);
-  const br = Math.round(r * a + 255 * (1 - a));
-  const bg = Math.round(g * a + 255 * (1 - a));
-  const bb = Math.round(b * a + 255 * (1 - a));
+  const { r: br0, g: bg0, b: bb0 } = hexToRgb(baseHex);
+  const br = Math.round(r * a + br0 * (1 - a));
+  const bg = Math.round(g * a + bg0 * (1 - a));
+  const bb = Math.round(b * a + bb0 * (1 - a));
   return `#${((1 << 24) + (br << 16) + (bg << 8) + bb).toString(16).slice(1)}`;
 }
 

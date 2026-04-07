@@ -20,6 +20,7 @@ import {
   Menu,
   Portal,
   SegmentedButtons,
+  Surface,
   Text,
   useTheme,
 } from 'react-native-paper';
@@ -347,7 +348,10 @@ export default function IssuesHomeScreen() {
           {probeLoading ? (
             <ActivityIndicator accessibilityLabel="Checking for other issues" />
           ) : filteredOrScopedEmpty ? (
-            <View style={styles.emptyCard}>
+            <Surface
+              style={[styles.emptyCard, { borderRadius: theme.roundness * 1.5 }]}
+              elevation={1}
+            >
               <Text variant="bodyLarge">
                 {hasActiveFilters(listParams) ? 'Nothing matches filters' : 'Nothing in this queue'}
               </Text>
@@ -362,9 +366,12 @@ export default function IssuesHomeScreen() {
               <Button mode="outlined" onPress={() => setListParams(defaultIssueListParams('all'))} style={styles.emptyBtn}>
                 View all
               </Button>
-            </View>
+            </Surface>
           ) : orgWideEmpty ? (
-            <View style={styles.emptyCard}>
+            <Surface
+              style={[styles.emptyCard, { borderRadius: theme.roundness * 1.5 }]}
+              elevation={1}
+            >
               <Text variant="bodyLarge">No issues yet</Text>
               <Text variant="bodyMedium" style={[styles.muted, { color: theme.colors.onSurfaceVariant }]}>
                 Capture work with New issue.
@@ -372,7 +379,7 @@ export default function IssuesHomeScreen() {
               <Button mode="contained" onPress={() => router.push('/issues/create')} style={styles.emptyBtn}>
                 New issue
               </Button>
-            </View>
+            </Surface>
           ) : null}
         </View>
       ) : null}
@@ -401,7 +408,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 88 },
   emptyWrap: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  emptyCard: { gap: 12, alignItems: 'flex-start' },
+  emptyCard: { gap: 12, alignItems: 'flex-start', padding: 20 },
   emptyBtn: { marginTop: 4 },
   dialogScroll: { maxHeight: 360 },
   dialogSection: { marginTop: 8, marginBottom: 4, paddingHorizontal: 8 },

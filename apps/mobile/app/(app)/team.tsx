@@ -334,7 +334,7 @@ export default function TeamScreen() {
                 />
               )}
             />
-            <Text variant="bodySmall" style={styles.fieldError}>
+            <Text variant="bodySmall" style={[styles.fieldError, { color: theme.colors.error }]}>
               {inviteForm.formState.errors.email?.message}
             </Text>
             <Text variant="labelLarge" style={styles.radioLabel}>
@@ -370,7 +370,7 @@ export default function TeamScreen() {
                 />
               )}
             />
-            <Text variant="bodySmall" style={styles.fieldError}>
+            <Text variant="bodySmall" style={[styles.fieldError, { color: theme.colors.error }]}>
               {inviteForm.formState.errors.initialPassword?.message}
             </Text>
             <Text variant="bodySmall" style={styles.muted}>
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
   chip: { alignSelf: 'flex-start' },
   retry: { alignSelf: 'flex-start' },
-  fieldError: { color: '#B3261E', minHeight: 18 },
+  fieldError: { minHeight: 18 },
   passwordField: { marginTop: 8 },
   radioLabel: { marginTop: 8, marginBottom: 4 },
   dialogEmail: { marginBottom: 8 },
