@@ -58,9 +58,19 @@ npx expo start
 
 Use the Expo CLI prompts to open iOS simulator, Android emulator, or web. The app uses **Expo Router**, **React Native Paper**, and **TanStack Query** (see `apps/mobile/package.json` / `app.config.ts` for the Expo SDK version).
 
+## Testing
+
+| Doc | Scope |
+|-----|--------|
+| [`docs/testing-backend.md`](docs/testing-backend.md) | API: `mvn verify`, Testcontainers, integration tests |
+| [`docs/testing-mobile.md`](docs/testing-mobile.md) | Mobile: Jest, lint, typecheck |
+| [`docs/testing-e2e.md`](docs/testing-e2e.md) | Maestro UI flows (local / optional CI), seed script |
+
 ## CI
 
 Pull requests run:
 
 - **API:** `mvn -B verify` under JDK 25 (includes tests using Testcontainers and PostgreSQL).
-- **Mobile:** `npm ci`, `npm run lint`, and `npm run typecheck`.
+- **Mobile:** `npm ci`, `npm run lint`, `npm run typecheck`, and `npm test -- --ci`.
+
+Maestro E2E is **not** part of the default PR workflow; see [`docs/testing-e2e.md`](docs/testing-e2e.md) for why and for local runs.

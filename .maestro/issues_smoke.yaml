@@ -1,0 +1,23 @@
+# Journey A: sign-in → Issues list → open seeded issue → issue detail.
+# Requires: API + app running; run `bash .maestro/seed.sh` and export printed env vars.
+# Set E2E_APP_ID to your target (Expo Go Android default: host.exp.exponent).
+appId: ${E2E_APP_ID}
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "MowerCare"
+    timeout: 120000
+- tapOn: "Organization ID"
+- inputText: ${E2E_ORG_ID}
+- tapOn: "Email"
+- inputText: ${E2E_ADMIN_EMAIL}
+- tapOn: "Password"
+- inputText: ${E2E_ADMIN_PASSWORD}
+- hideKeyboard
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Issues"
+    timeout: 120000
+- tapOn:
+    text: "${E2E_ISSUE_TITLE}"
+- assertVisible: "Edit issue"

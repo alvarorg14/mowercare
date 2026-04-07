@@ -1,5 +1,7 @@
 # Mobile app testing (`apps/mobile`)
 
+For **Maestro** UI journeys (sign-in, issues, notifications), see [`testing-e2e.md`](testing-e2e.md).
+
 Commands assume repository root; use `cd apps/mobile` first.
 
 ## Commands

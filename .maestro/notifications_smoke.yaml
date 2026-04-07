@@ -1,0 +1,23 @@
+# Journey B: sign-in → Notifications tab → stable screen (empty or list).
+# Push / deep links are out of scope; see docs/testing-e2e.md and push-navigation unit tests.
+appId: ${E2E_APP_ID}
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "MowerCare"
+    timeout: 120000
+- tapOn: "Organization ID"
+- inputText: ${E2E_ORG_ID}
+- tapOn: "Email"
+- inputText: ${E2E_ADMIN_EMAIL}
+- tapOn: "Password"
+- inputText: ${E2E_ADMIN_PASSWORD}
+- hideKeyboard
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Issues"
+    timeout: 120000
+- tapOn: "Notifications"
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 60000
