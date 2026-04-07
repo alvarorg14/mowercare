@@ -1,5 +1,5 @@
 # generated: 2026-03-27T12:00:00Z
-# last_updated: 2026-04-07T19:00:00Z
+# last_updated: 2026-04-07T22:30:00Z
 # project: mowercare
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: "2026-03-27T12:00:00Z"
-last_updated: "2026-04-07T19:00:00Z"
+last_updated: "2026-04-07T22:30:00Z"
 project: mowercare
 project_key: NOKEY
 tracking_system: file-system
@@ -84,7 +84,7 @@ development_status:
 
   epic-5: in-progress
   5-1-backend-unit-and-integration-test-expansion: done
-  5-2-frontend-unit-test-expansion: backlog
+  5-2-frontend-unit-test-expansion: done
   5-3-end-to-end-tests-for-critical-flows: backlog
   5-4-backend-domain-aligned-package-structure: backlog
   5-5-mobile-ui-modernization-2026-ready-patterns: backlog

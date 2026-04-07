@@ -5,7 +5,7 @@ import { issueStatusTokens } from '../lib/theme';
 import { formatRelativeTimeUtc } from '../lib/relative-time';
 import type { IssueListItem } from '../lib/issue-api';
 
-function statusColor(status: string): string {
+export function issueRowStatusColor(status: string): string {
   switch (status) {
     case 'OPEN':
       return issueStatusTokens.open;
@@ -21,7 +21,7 @@ function statusColor(status: string): string {
   }
 }
 
-function statusLabel(status: string): string {
+export function issueRowStatusLabel(status: string): string {
   return status.replace(/_/g, ' ');
 }
 
@@ -32,11 +32,11 @@ type Props = {
 
 export function IssueRow({ item, onPress }: Props) {
   const theme = useTheme();
-  const sc = statusColor(item.status);
+  const sc = issueRowStatusColor(item.status);
   const siteLine = [item.customerLabel, item.siteLabel].filter(Boolean).join(' · ');
   const assignee = item.assigneeLabel?.trim() || 'Unassigned';
   const rel = formatRelativeTimeUtc(item.updatedAt);
-  const st = statusLabel(item.status);
+  const st = issueRowStatusLabel(item.status);
   const a11yLabel = `Issue ${item.title}. Status ${st}. Priority ${item.priority}. Assignee ${assignee}. Updated ${rel}.`;
 
   return (
@@ -83,7 +83,7 @@ export function IssueRow({ item, onPress }: Props) {
             style={[styles.chip, { backgroundColor: sc + '22' }]}
             icon="circle-outline"
           >
-            {statusLabel(item.status)}
+            {issueRowStatusLabel(item.status)}
           </Chip>
           <Chip mode="outlined" compact icon="flag-outline">
             {item.priority}

@@ -27,7 +27,7 @@ type Props = {
   onSelectUserId: (userId: string) => void;
 };
 
-function pickErrorMessage(err: unknown): string {
+export function pickAssigneePickerErrorMessage(err: unknown): string {
   if (err instanceof ApiProblemError) return err.detail ?? err.title ?? 'Request failed';
   if (err instanceof Error) return err.message;
   return 'Something went wrong';
@@ -96,7 +96,7 @@ export function AssigneePicker({ visible, onDismiss, onSelectUserId }: Props) {
               icon="alert-circle-outline"
               actions={[{ label: 'Retry', onPress: () => void q.refetch() }]}
             >
-              {pickErrorMessage(q.error)}
+              {pickAssigneePickerErrorMessage(q.error)}
             </Banner>
           ) : null}
 
